@@ -13,8 +13,8 @@ Governments are storing vastamounts of general internet traffic for
 retroactive decryption in anticipation of having these machines perfected
 (breaking current encryption schemes like RSA, AES, and ECDH).
 If we are to retain our anonymity and privacy,
-then we must bolster the security of existing
-onion-routing protocols and utilize post-quantum encryption schemes.
+then we must bolster the security of existing onion-routing
+protocols and utilize post-quantum encryption schemes.
 Fundamentally, we’d like to create a bare-bones
 implementation of *The Onion Router* (TOR) protocol
 using Rust on a small virtual network, leveraging the NTRU cryptosystem
