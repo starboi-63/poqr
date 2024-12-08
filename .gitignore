@@ -1,4 +1,4 @@
-poqr/onion/target
-poqr/onion/Cargo.lock
-poqr/ntru/target
-poqr/ntru/Cargo.lock
+**/target/
+**/Cargo.lock
+*.rs.bk
+*.rs.orig
