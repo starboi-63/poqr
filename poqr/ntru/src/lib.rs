@@ -1,5 +1,5 @@
 use ark_bn254::Fr;
-use ark_poly::{polynomial::univariate::SparsePolynomial};
+use ark_poly::polynomial::univariate::SparsePolynomial;
 use rand::prelude::*;
 
 //NOTE: Functionality implemented tonight (12/7) will likely be sectionalized into an ntru-utils
@@ -10,8 +10,8 @@ use rand::prelude::*;
 pub fn random_poly(deg_b: usize) -> SparsePolynomial<Fr> {
     let mut rng = rand::thread_rng();
     let coeffs: Vec<(usize, Fr)> = (0..deg_b + 1)
-    .map(|i| (i, Fr::from(rng.gen_range(-1..=1))))
-    .collect();
+        .map(|i| (i, Fr::from(rng.gen_range(-1..=1))))
+        .collect();
     SparsePolynomial::from_coefficients_vec(coeffs)
 }
 
@@ -27,4 +27,3 @@ mod tests {
         assert_eq!(poly.degree(), 10);
     }
 }
-
