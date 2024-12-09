@@ -1,4 +1,5 @@
 use cursive::views::{Dialog, TextView};
+mod relay;
 
 fn main() {
     // Creates the cursive root - required for every application.
