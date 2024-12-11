@@ -1,4 +1,5 @@
 mod convolution_polynomial;
-mod ntru_key;
+mod poly_tests;
+pub mod ntru_key;
 // Exported from ntru crate
-pub use ntru_key::NtruKeys;
+pub use ntru_key::NtruKeyPair;
