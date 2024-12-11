@@ -117,30 +117,31 @@ impl ConvolutionPolynomial {
         assert!(n == divisor.coeffs.len(), "divmod: Polynomials must be in the same ring");
         assert!(!divisor.is_zero(), "divmod: Division by zero polynomial not permitted");
         
-        let mut dividend = self.clone();
+        let mut remainder = self.clone();
         let mut quotient = ConvolutionPolynomial {
             coeffs: vec![0;n],
         };
 
-        while dividend.degree() >= divisor.degree() {
-            let degree_diff = dividend.degree() - divisor.degree();
-            let inverse_divisor_lc = if let Ok(inverse) = inverse(divisor.lc(), m) {
-                inverse
-            } else {
-                return Err("Invalid divisor polynomial; no multiplicative inverse for its leading coefficient (mod m)".to_string());
-            };
+        // Check whether the given divisor is valid by attempting to compute the multiplicative inverse of its leading coefficient
+        let inverse_divisor_lc = if let Ok(inverse) = inverse(divisor.lc(), m) {
+            inverse
+        } else {
+            return Err("Invalid divisor polynomial; no multiplicative inverse for its leading coefficient (mod m)".to_string());
+        };
 
-            // Construct the term c * x^(degree_diff)
-            let c = dividend.lc() * inverse_divisor_lc;
-            let term = ConvolutionPolynomial { coeffs: (0..n).map(|i| if i == degree_diff { c } else { 0 }).collect() };
+        while remainder.degree() >= divisor.degree() {
+            // Construct the term c * x^d
+            let d = remainder.degree() - divisor.degree();
+            let c = remainder.lc() * inverse_divisor_lc;
+            let term = ConvolutionPolynomial { coeffs: (0..n).map(|i| if i == d { c } else { 0 }).collect() };
 
             // Add the term to the quotient
             quotient = quotient.add(term.clone(), Some(m));
             // Subtract the term * divisor from the dividend
-            dividend = dividend.sub(divisor.clone().mul(term, Some(m)), Some(m));
+            remainder = remainder.sub(divisor.clone().mul(term, Some(m)), Some(m));
         }
       
-        Ok((quotient, dividend))
+        Ok((quotient, remainder))
     }
 }
 
@@ -168,7 +169,7 @@ fn extended_euclidean_algorithm(a: i32, b: i32) -> (i32, i32) {
     (x, y)
 }
 
-/// Returns the multiplicative inverse of `a` within the unit group (Z/mZ)*.
+/// Returns the multiplicative inverse of `a` within the unit group (Z/mZ)^*.
 fn inverse(a: i32, m: i32) -> Result<i32, String> {
     if gcd(a, m) != 1 {
         return Err("`a` only has an inverse (mod m) if it is relatively prime to m.".to_string());

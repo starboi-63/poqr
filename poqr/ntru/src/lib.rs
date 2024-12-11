@@ -1,3 +1,4 @@
+pub mod ntru;
 mod convolution_polynomial;
 mod poly_tests;
 pub mod ntru_key;
