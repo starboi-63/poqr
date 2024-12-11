@@ -1,4 +1,4 @@
-mod keys;
-mod polynomials;
+mod convolution_polynomial;
+mod ntru_key;
 // Exported from ntru crate
-pub use keys::{AsymmetricEncryptionKeys, NtruKeys};
+pub use ntru_key::NtruKeys;

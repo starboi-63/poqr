@@ -1,4 +1,5 @@
 use network::network_stacks::IpStack;
+use ntru::
 
 pub trait Relay: IpStack {
     /// Returns the identity key of the relay (in TOR protocol, this is an Ed25519 key).
