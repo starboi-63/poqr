@@ -14,7 +14,7 @@ pub fn decrypt(enc_msg: ConvolutionPolynomial, k_priv: ConvolutionPolynomial) {}
 /// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients reperesenting that message
 fn serialize(plain_msg: Vec<u8>) -> ConvolutionPolynomial {
     assert!(
-        plain_msg.len() <= N,
+        plain_msg.len() * 5 <= N,
         "serialize: Message cannot exceed N - 1 in length"
     );
     let digit_vec = {
@@ -111,7 +111,7 @@ fn bal_tern_esc(n: i32, i: u32) -> i32 {
 
 #[test]
 fn test_ser_deser() {
-    let msg = "hello";
+    let msg = "hello guys this is alex";
     let ser_msg = {
         let msg_bytes = String::from(msg).as_bytes().to_vec();
         serialize(msg_bytes)
@@ -120,4 +120,5 @@ fn test_ser_deser() {
     let deser = deserialize(ser_msg);
     println!("deser: {}", String::from_utf8_lossy(&deser));
     assert_eq!(msg.as_bytes().to_vec(), deser);
+    println!("characters in message: {}", msg.len());
 }
