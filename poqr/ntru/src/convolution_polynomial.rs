@@ -1,5 +1,7 @@
 use rand::prelude::*;
 
+// TERNARY POLYNOMIALS
+
 /// Generates a random ternary polynomial of degree less than `n` with `num_ones` 1s and `num_neg_ones` -1s.
 /// The remaining coefficients are 0. The polynomial can be viewed as an element of the ring Z\[x\]/(x^n - 1).
 ///
@@ -7,7 +9,7 @@ use rand::prelude::*;
 /// * `n` - Modulus of the polynomial degree (i.e. x^n = 1)
 /// * `num_ones` - Number of coefficients equal to 1 in the polynomial
 /// * `num_neg_ones` - Number of coefficients equal to -1 in the polynomial
-pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> ConvolutionPolynomial {
+pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> ConvPoly {
     // Sanity checks
     assert!(
         num_ones + num_neg_ones <= n,
@@ -15,7 +17,7 @@ pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> Con
     );
     assert!(n > 0, "Polynomial degree should be greater than 0");
 
-    let mut poly = ConvolutionPolynomial { coeffs: vec![0; n] };
+    let mut poly = ConvPoly { coeffs: vec![0; n] };
     let mut rng = rand::thread_rng();
     let mut rand_indices: Vec<usize> = (0..n).collect();
     rand_indices.shuffle(&mut rng);
@@ -33,14 +35,16 @@ pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> Con
     poly
 }
 
+// CONVOLUTION POLYNOMIALS
+
 /// A polynomial in the ring of convolution polynomials Z\[x\]/(x^N - 1). Here, N is the modulus of the polynomial
 /// degree, and equals the length of the `coeffs` vector.
 #[derive(Debug, Clone)]
-pub struct ConvolutionPolynomial {
+pub struct ConvPoly {
     pub coeffs: Vec<i32>, // Coefficients of the polynomial such that coeffs[i] is the coefficient of x^i
 }
 
-impl ConvolutionPolynomial {
+impl ConvPoly {
     /// Returns the degree of the polynomial (i.e. the highest power of x with a non-zero coefficient)
     pub fn deg(&self) -> usize {
         self.coeffs.iter().rposition(|&x| x != 0).unwrap_or(0)
@@ -59,14 +63,14 @@ impl ConvolutionPolynomial {
     /// Adds another polynomial to this one by adding the corresponding coefficients. If `m` is
     /// provided, the addition is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
     /// of Z\[x\]/(x^N - 1)).
-    pub fn add(self, other: &ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
+    pub fn add(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
         ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut result = ConvPoly { coeffs: vec![0; n] };
 
         for i in 0..n {
             result.coeffs[i] = self.coeffs[i] + other.coeffs[i];
@@ -81,14 +85,14 @@ impl ConvolutionPolynomial {
     /// Subtracts another polynomial from this one by subtracting the corresponding coefficients. If `m` is
     /// provided, the subtraction is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
     /// of Z\[x\]/(x^N - 1)).
-    pub fn sub(self, other: &ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
+    pub fn sub(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
         ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut result = ConvPoly { coeffs: vec![0; n] };
 
         for i in 0..n {
             result.coeffs[i] = self.coeffs[i] - other.coeffs[i];
@@ -103,14 +107,14 @@ impl ConvolutionPolynomial {
     /// Multiplies this polynomial by another using the convolution operation in the ring. If `m` is
     /// provided, the multiplication is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
     /// of Z\[x\]/(x^N - 1)).
-    pub fn mul(self, other: &ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
+    pub fn mul(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
         ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut result = ConvPoly { coeffs: vec![0; n] };
 
         // Perform the convolution operation on self and other and store in result
         for i in 0..n {
@@ -130,13 +134,9 @@ impl ConvolutionPolynomial {
     }
 
     /// Divides the polynomial by another polynomial and returns the quotient and remainder. The division is
-    /// treated as though it is happening within the polynomial ring (Z/mZ)[x]/(x^N-1). If `m` is not a unit in
+    /// treated as though it is happening within the polynomial ring (Z/mZ)\[x\]/(x^N-1). If `m` is not a unit in
     /// the ring (Z/mZ), then the division is not possible and an error is returned.
-    pub fn div(
-        &self,
-        divisor: &ConvolutionPolynomial,
-        m: i32,
-    ) -> Result<(ConvolutionPolynomial, ConvolutionPolynomial), String> {
+    pub fn div(&self, divisor: &ConvPoly, m: i32) -> Result<(ConvPoly, ConvPoly), String> {
         let n = self.coeffs.len();
 
         // Sanity checks
@@ -150,7 +150,7 @@ impl ConvolutionPolynomial {
         );
 
         let mut remainder = self.clone();
-        let mut quotient = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut quotient = ConvPoly { coeffs: vec![0; n] };
 
         // Check whether the given divisor is valid by attempting to compute the multiplicative inverse of its leading coefficient
         let inverse_divisor_lc = if let Ok(inverse) = inverse(divisor.lc(), m) {
@@ -163,7 +163,7 @@ impl ConvolutionPolynomial {
             // Construct the term c * x^d
             let d = remainder.deg() - divisor.deg();
             let c = (remainder.lc() * inverse_divisor_lc).rem_euclid(m);
-            let term = ConvolutionPolynomial {
+            let term = ConvPoly {
                 coeffs: (0..n).map(|i| if i == d { c } else { 0 }).collect(),
             };
 
@@ -176,12 +176,51 @@ impl ConvolutionPolynomial {
         Ok((quotient, remainder))
     }
 
+    // pub fn extended_gcd(&self, other: &ConvPoly, m: i32) -> (ConvPoly, ConvPoly, ConvPoly) {
+    //     let n = self.coeffs.len();
+
+    //     assert!(
+    //         n == other.coeffs.len(),
+    //         "Polynomials must be in the same ring"
+    //     );
+    //     assert!(
+    //         !self.is_zero() || !other.is_zero(),
+    //         "At least one of the polynomials must be non-zero"
+    //     );
+
+    //     let (mut a, mut b) = (self.clone(), other.clone());
+    //     let (mut x, mut y, mut z, mut w) = (
+    //         ConvPoly { coeffs: vec![0; n] },
+    //         ConvPoly { coeffs: vec![0; n] },
+    //         ConvPoly { coeffs: vec![0; n] },
+    //         ConvPoly { coeffs: vec![0; n] },
+    //     );
+    //     x.coeffs[0] = 1;
+    //     w.coeffs[0] = 1;
+
+    //     while !b.is_zero() {
+    //         let (q, r) = a.div(&b, m).unwrap();
+    //         a = b;
+    //         b = r;
+    //         let new_x = x.sub(&q.mul(&z, Some(m)), Some(m));
+    //         let new_y = y.sub(&q.mul(&w, Some(m)), Some(m));
+    //         x = z;
+    //         y = w;
+    //         z = new_x;
+    //         w = new_y;
+    //     }
+
+    //     (a, x, y)
+    // }
+
     // Computes the inverse of the given polynomial within the ring (Z/mZ)\[x\]/(x^N - 1) using the
     // Extended Euclidean Algorithm. Returns `None`` if the polynomial is not invertible.
-    // pub fn inverse(&self, m: i32) -> Option<ConvolutionPolynomial> {
-    //     todo!()
-    // }
+    pub fn inverse(&self, m: i32) -> Option<ConvPoly> {
+        todo!()
+    }
 }
+
+// INTEGER ARITHMETIC
 
 /// The Euclidean Algorithm. Return the greatest common divisor and a and b.
 pub fn gcd(a: i32, b: i32) -> i32 {
