@@ -1,4 +1,4 @@
-use crate::convolution_polynomial::ConvolutionPolynomial;
+use crate::convolution_polynomial::ConvPoly;
 
 /// An NTRU key pair
 pub struct NtruKeyPair {
@@ -10,11 +10,11 @@ pub struct NtruKeyPair {
 
 /// A public key used in the NTRU encryption scheme
 pub struct NtruPublicKey {
-    h: ConvolutionPolynomial,
+    h: ConvPoly,
 }
 
 /// A private key used in the NTRU encryption scheme
 pub struct NtruPrivateKey {
-    f: ConvolutionPolynomial,
-    g: ConvolutionPolynomial,
+    f: ConvPoly,
+    g: ConvPoly,
 }

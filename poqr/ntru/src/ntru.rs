@@ -2,19 +2,19 @@ use crate::convolution_polynomial::*;
 use std::collections::VecDeque;
 
 // NTRU Parameters, derived by Tanish and Alex
-const N: usize = 503;
+const N: u32 = 503;
 const P: u32 = 3;
 const Q: u32 = 419;
 const D: u32 = 23;
 
-pub fn encrypt(msg: Vec<u8>, k_pub: ConvolutionPolynomial) {}
+pub fn encrypt(msg: Vec<u8>, k_pub: ConvPoly) {}
 
-pub fn decrypt(enc_msg: ConvolutionPolynomial, k_priv: ConvolutionPolynomial) {}
+pub fn decrypt(enc_msg: ConvPoly, k_priv: ConvPoly) {}
 
 /// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients reperesenting that message
-fn serialize(plain_msg: Vec<u8>) -> ConvolutionPolynomial {
+fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
     assert!(
-        plain_msg.len() * 5 <= N,
+        plain_msg.len() * 5 <= N as usize,
         "serialize: Message cannot exceed N - 1 in length"
     );
     let digit_vec = {
@@ -24,15 +24,21 @@ fn serialize(plain_msg: Vec<u8>) -> ConvolutionPolynomial {
         }
         temp
     };
-    ConvolutionPolynomial { coeffs: digit_vec }
+    ConvPoly { coeffs: digit_vec }
 }
 
 #[test]
 fn test_ser() {
     let msg_test = String::from("hello");
     let msg_test_bytes = msg_test.as_bytes().to_vec();
-    println!("coeffs for test bytes: {:?}", serialize(msg_test_bytes.clone()).coeffs);
-    assert_eq!(serialize(msg_test_bytes).coeffs, vec![1, 0, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0]);
+    println!(
+        "coeffs for test bytes: {:?}",
+        serialize(msg_test_bytes.clone()).coeffs
+    );
+    assert_eq!(
+        serialize(msg_test_bytes).coeffs,
+        vec![1, 0, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0]
+    );
 }
 
 /// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
@@ -40,7 +46,7 @@ fn test_ser() {
 fn ternary(mut c: i32) -> Vec<i32> {
     assert!(c < 242, "5-index ternary can encode at max a value of 242");
     if c == 0 {
-        return vec![0, 0, 0, 0, 0]
+        return vec![0, 0, 0, 0, 0];
     }
     let mut digits: VecDeque<i32> = VecDeque::new();
     while c > 0 {
@@ -64,13 +70,13 @@ fn ternary(mut c: i32) -> Vec<i32> {
 
 /// Deserializes a convolution polynomial into the message it represents as a vector
 /// of u8s
-fn deserialize(ser_msg: ConvolutionPolynomial) -> Vec<u8> {
+fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
     let coeffs = ser_msg.coeffs;
     let mut ret: Vec<u8> = Vec::new();
     for chunk in coeffs.chunks(5) {
         match out_of_ternary(chunk) {
             Some(c) => ret.push(c),
-            None => ()
+            None => (),
         }
     }
     ret
@@ -82,7 +88,7 @@ fn deserialize(ser_msg: ConvolutionPolynomial) -> Vec<u8> {
 fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     println!("Running out of ternary on: {:?}", ser_ch);
     if ser_ch.len() != 5 {
-        return None
+        return None;
     }
     let mut ans = 0;
     // We know every balanced ternary number will be 5 indices, so here's a fun little
@@ -94,12 +100,12 @@ fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     ans += bal_tern_esc(ser_ch[0], 4);
     match u8::try_from(ans) {
         Ok(a) => Some(a),
-        Err(_) => None
+        Err(_) => None,
     }
-} 
+}
 
 /// Takes an index from an array representing a balanced ternary number
-/// and converts it to a decimal component of the decimal conversion, 
+/// and converts it to a decimal component of the decimal conversion,
 /// dependent on its position in the array and index value.
 fn bal_tern_esc(n: i32, i: u32) -> i32 {
     if n == -1 {

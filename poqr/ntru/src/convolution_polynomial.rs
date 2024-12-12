@@ -1,29 +1,52 @@
 use rand::prelude::*;
 
+// TERNARY POLYNOMIALS
+
 /// Generates a random ternary polynomial of degree less than `n` with `num_ones` 1s and `num_neg_ones` -1s.
-/// The remaining coefficients are 0. The polynomial can be viewed as an element of the ring Z[x]/(x^n - 1).
+/// The remaining coefficients are 0. The polynomial can be viewed as an element of the ring Z\[x\]/(x^n - 1).
 ///
 /// ### Arguments
 /// * `n` - Modulus of the polynomial degree (i.e. x^n = 1)
 /// * `num_ones` - Number of coefficients equal to 1 in the polynomial
 /// * `num_neg_ones` - Number of coefficients equal to -1 in the polynomial
-pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> ConvolutionPolynomial {
-    assert!(num_ones + num_neg_ones <= n); // Sanity check
+pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> ConvPoly {
+    // Sanity checks
+    assert!(
+        num_ones + num_neg_ones <= n,
+        "Number of 1s and -1s should be <= n (the number of terms in the polynomial)"
+    );
+    assert!(n > 0, "Polynomial degree should be greater than 0");
+
+    let mut poly = ConvPoly { coeffs: vec![0; n] };
     let mut rng = rand::thread_rng();
-    ConvolutionPolynomial {
-        coeffs: (0..n).map(|_| rng.gen_range(-1..=1)).collect(),
+    let mut rand_indices: Vec<usize> = (0..n).collect();
+    rand_indices.shuffle(&mut rng);
+
+    // Set the first `num_ones` random indices to 1
+    for i in 0..num_ones {
+        poly.coeffs[rand_indices[i]] = 1;
     }
+
+    // Set the next `num_neg_ones` random indices to -1
+    for i in num_ones..num_ones + num_neg_ones {
+        poly.coeffs[rand_indices[i]] = -1;
+    }
+
+    poly
 }
 
-/// A polynomial in the ring of convolution polynomials Z[x]/(x^n - 1).
+// CONVOLUTION POLYNOMIALS
+
+/// A polynomial in the ring of convolution polynomials Z\[x\]/(x^N - 1). Here, N is the modulus of the polynomial
+/// degree, and equals the length of the `coeffs` vector.
 #[derive(Debug, Clone)]
-pub struct ConvolutionPolynomial {
+pub struct ConvPoly {
     pub coeffs: Vec<i32>, // Coefficients of the polynomial such that coeffs[i] is the coefficient of x^i
 }
 
-impl ConvolutionPolynomial {
+impl ConvPoly {
     /// Returns the degree of the polynomial (i.e. the highest power of x with a non-zero coefficient)
-    pub fn degree(&self) -> usize {
+    pub fn deg(&self) -> usize {
         self.coeffs.iter().rposition(|&x| x != 0).unwrap_or(0)
     }
 
@@ -34,20 +57,20 @@ impl ConvolutionPolynomial {
 
     /// Returns the leading coefficient of the polynomial (i.e. the coefficient of x^degree)
     pub fn lc(&self) -> i32 {
-        self.coeffs[self.degree()]
+        self.coeffs[self.deg()]
     }
 
     /// Adds another polynomial to this one by adding the corresponding coefficients. If `m` is
-    /// provided, the addition is performed modulo `m` (i.e. in the ring (Z/mZ)[x]/(x^n - 1) instead
-    /// of Z[x]/(x^n - 1)).
-    pub fn add(self, other: ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
+    /// provided, the addition is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
+    /// of Z\[x\]/(x^N - 1)).
+    pub fn add(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
         ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut result = ConvPoly { coeffs: vec![0; n] };
 
         for i in 0..n {
             result.coeffs[i] = self.coeffs[i] + other.coeffs[i];
@@ -60,16 +83,16 @@ impl ConvolutionPolynomial {
     }
 
     /// Subtracts another polynomial from this one by subtracting the corresponding coefficients. If `m` is
-    /// provided, the subtraction is performed modulo `m` (i.e. in the ring (Z/mZ)[x]/(x^n - 1) instead
-    /// of Z[x]/(x^n - 1)).
-    pub fn sub(self, other: ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
+    /// provided, the subtraction is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
+    /// of Z\[x\]/(x^N - 1)).
+    pub fn sub(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
         ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut result = ConvPoly { coeffs: vec![0; n] };
 
         for i in 0..n {
             result.coeffs[i] = self.coeffs[i] - other.coeffs[i];
@@ -82,16 +105,16 @@ impl ConvolutionPolynomial {
     }
 
     /// Multiplies this polynomial by another using the convolution operation in the ring. If `m` is
-    /// provided, the multiplication is performed modulo `m` (i.e. in the ring (Z/mZ)[x]/(x^n - 1) instead
-    /// of Z[x]/(x^n - 1)).
-    pub fn mul(self, other: ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
+    /// provided, the multiplication is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
+    /// of Z\[x\]/(x^N - 1)).
+    pub fn mul(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
         ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut result = ConvPoly { coeffs: vec![0; n] };
 
         // Perform the convolution operation on self and other and store in result
         for i in 0..n {
@@ -110,18 +133,10 @@ impl ConvolutionPolynomial {
         result
     }
 
-    // Computes the inverse of the given polynomial within the ring (Z/mZ)[x]/(x^n - 1) using the
-    // Extended Euclidean Algorithm. Returns None if the polynomial is not invertible.
-    fn inverse(&self, m: i32) -> Option<ConvolutionPolynomial> {
-        todo!()
-    }
-
-    /// Divides the polynomial by another polynomial and returns the quotient and remainder.
-    fn divmod(
-        &self,
-        divisor: &ConvolutionPolynomial,
-        m: i32,
-    ) -> Result<(ConvolutionPolynomial, ConvolutionPolynomial), String> {
+    /// Divides the polynomial by another polynomial and returns the quotient and remainder. The division is
+    /// treated as though it is happening within the polynomial ring (Z/mZ)\[x\]/(x^N-1). If `m` is not a unit in
+    /// the ring (Z/mZ), then the division is not possible and an error is returned.
+    pub fn div(&self, divisor: &ConvPoly, m: i32) -> Result<(ConvPoly, ConvPoly), String> {
         let n = self.coeffs.len();
 
         // Sanity checks
@@ -135,7 +150,7 @@ impl ConvolutionPolynomial {
         );
 
         let mut remainder = self.clone();
-        let mut quotient = ConvolutionPolynomial { coeffs: vec![0; n] };
+        let mut quotient = ConvPoly { coeffs: vec![0; n] };
 
         // Check whether the given divisor is valid by attempting to compute the multiplicative inverse of its leading coefficient
         let inverse_divisor_lc = if let Ok(inverse) = inverse(divisor.lc(), m) {
@@ -144,26 +159,72 @@ impl ConvolutionPolynomial {
             return Err("Invalid divisor polynomial; no multiplicative inverse for its leading coefficient (mod m)".to_string());
         };
 
-        while remainder.degree() >= divisor.degree() {
+        while remainder.deg() >= divisor.deg() {
             // Construct the term c * x^d
-            let d = remainder.degree() - divisor.degree();
-            let c = remainder.lc() * inverse_divisor_lc;
-            let term = ConvolutionPolynomial {
+            let d = remainder.deg() - divisor.deg();
+            let c = (remainder.lc() * inverse_divisor_lc).rem_euclid(m);
+            let term = ConvPoly {
                 coeffs: (0..n).map(|i| if i == d { c } else { 0 }).collect(),
             };
 
             // Add the term to the quotient
-            quotient = quotient.add(term.clone(), Some(m));
+            quotient = quotient.add(&term, Some(m));
             // Subtract the term * divisor from the dividend
-            remainder = remainder.sub(divisor.clone().mul(term, Some(m)), Some(m));
+            remainder = remainder.sub(&divisor.clone().mul(&term, Some(m)), Some(m));
         }
 
         Ok((quotient, remainder))
     }
+
+    // pub fn extended_gcd(&self, other: &ConvPoly, m: i32) -> (ConvPoly, ConvPoly, ConvPoly) {
+    //     let n = self.coeffs.len();
+
+    //     assert!(
+    //         n == other.coeffs.len(),
+    //         "Polynomials must be in the same ring"
+    //     );
+    //     assert!(
+    //         !self.is_zero() || !other.is_zero(),
+    //         "At least one of the polynomials must be non-zero"
+    //     );
+
+    //     let (mut a, mut b) = (self.clone(), other.clone());
+    //     let (mut x, mut y, mut z, mut w) = (
+    //         ConvPoly { coeffs: vec![0; n] },
+    //         ConvPoly { coeffs: vec![0; n] },
+    //         ConvPoly { coeffs: vec![0; n] },
+    //         ConvPoly { coeffs: vec![0; n] },
+    //     );
+    //     x.coeffs[0] = 1;
+    //     w.coeffs[0] = 1;
+
+    //     while !b.is_zero() {
+    //         let (q, r) = a.div(&b, m).unwrap();
+    //         a = b;
+    //         b = r;
+    //         let new_x = x.sub(&q.mul(&z, Some(m)), Some(m));
+    //         let new_y = y.sub(&q.mul(&w, Some(m)), Some(m));
+    //         x = z;
+    //         y = w;
+    //         z = new_x;
+    //         w = new_y;
+    //     }
+
+    //     (a, x, y)
+    // }
+
+    // Computes the inverse of the given polynomial within the ring (Z/mZ)\[x\]/(x^N - 1) using the
+    // Extended Euclidean Algorithm. Returns `None`` if the polynomial is not invertible.
+    pub fn inverse(&self, m: i32) -> Option<ConvPoly> {
+        todo!()
+    }
 }
 
+// INTEGER ARITHMETIC
+
 /// The Euclidean Algorithm. Return the greatest common divisor and a and b.
-fn gcd(a: i32, b: i32) -> i32 {
+pub fn gcd(a: i32, b: i32) -> i32 {
+    assert!(a != 0 || b != 0, "At least one of a and b must be non-zero");
     let (mut a, mut b) = (a.clone(), b.clone());
 
     while b != 0 {
@@ -173,8 +234,9 @@ fn gcd(a: i32, b: i32) -> i32 {
     a
 }
 
-/// The Extended Euclidean Algorithm. Returns (x, y) such that a*x + b*y = gcd(a, b).
-fn extended_euclidean_algorithm(a: i32, b: i32) -> (i32, i32) {
+/// The Extended Euclidean Algorithm. Returns (gcd, x, y) such that a*x + b*y = gcd(a, b).
+pub fn extended_gcd(a: i32, b: i32) -> (i32, i32, i32) {
+    assert!(a != 0 || b != 0, "At least one of a and b must be non-zero");
     let (mut a, mut b) = (a.clone(), b.clone());
     let (mut x, mut y, mut z, mut w) = (1, 0, 0, 1);
 
@@ -183,16 +245,20 @@ fn extended_euclidean_algorithm(a: i32, b: i32) -> (i32, i32) {
         (a, b) = (b, a % b);
     }
 
-    (x, y)
+    (a, x, y)
 }
 
-/// Returns the multiplicative inverse of `a` within the unit group (Z/mZ)^*.
-fn inverse(a: i32, m: i32) -> Result<i32, String> {
+/// Returns the multiplicative inverse of `a` within the unit group (Z/mZ)*. Returns an error if no
+/// such inverse exists (i.e. if `a` is not relatively prime to `m`, and therefore not a member of the group).
+pub fn inverse(a: i32, m: i32) -> Result<i32, String> {
+    if a == 0 {
+        return Err("The multiplicative inverse of 0 does not exist.".to_string());
+    }
+
     if gcd(a, m) != 1 {
         return Err("`a` only has an inverse (mod m) if it is relatively prime to m.".to_string());
     }
 
-    let (x, _) = extended_euclidean_algorithm(a, m);
+    let (_, x, _) = extended_gcd(a, m);
     Ok(x.rem_euclid(m))
 }
-
