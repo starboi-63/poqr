@@ -10,7 +10,9 @@ use rand::prelude::*;
 pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> ConvolutionPolynomial {
     assert!(num_ones + num_neg_ones <= n); // Sanity check
     let mut rng = rand::thread_rng();
-    ConvolutionPolynomial { coeffs: (0..n).map(|_| rng.gen_range(-1..=1)).collect() }
+    ConvolutionPolynomial {
+        coeffs: (0..n).map(|_| rng.gen_range(-1..=1)).collect(),
+    }
 }
 
 /// A polynomial in the ring of convolution polynomials Z[x]/(x^n - 1).
@@ -39,10 +41,13 @@ impl ConvolutionPolynomial {
     /// provided, the addition is performed modulo `m` (i.e. in the ring (Z/mZ)[x]/(x^n - 1) instead
     /// of Z[x]/(x^n - 1)).
     pub fn add(self, other: ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
-        assert!(self.coeffs.len() == other.coeffs.len(), "Polynomials should be part of the same ring"); // Sanity check
+        assert!(
+            self.coeffs.len() == other.coeffs.len(),
+            "Polynomials should be part of the same ring"
+        ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0;n] };
+        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
 
         for i in 0..n {
             result.coeffs[i] = self.coeffs[i] + other.coeffs[i];
@@ -58,10 +63,13 @@ impl ConvolutionPolynomial {
     /// provided, the subtraction is performed modulo `m` (i.e. in the ring (Z/mZ)[x]/(x^n - 1) instead
     /// of Z[x]/(x^n - 1)).
     pub fn sub(self, other: ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
-        assert!(self.coeffs.len() == other.coeffs.len(), "Polynomials should be part of the same ring"); // Sanity check
+        assert!(
+            self.coeffs.len() == other.coeffs.len(),
+            "Polynomials should be part of the same ring"
+        ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvolutionPolynomial { coeffs: vec![0;n] };
+        let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
 
         for i in 0..n {
             result.coeffs[i] = self.coeffs[i] - other.coeffs[i];
@@ -77,8 +85,11 @@ impl ConvolutionPolynomial {
     /// provided, the multiplication is performed modulo `m` (i.e. in the ring (Z/mZ)[x]/(x^n - 1) instead
     /// of Z[x]/(x^n - 1)).
     pub fn mul(self, other: ConvolutionPolynomial, m: Option<i32>) -> ConvolutionPolynomial {
-        assert!(self.coeffs.len() == other.coeffs.len(), "Polynomials should be part of the same ring"); // Sanity check
-        
+        assert!(
+            self.coeffs.len() == other.coeffs.len(),
+            "Polynomials should be part of the same ring"
+        ); // Sanity check
+
         let n = self.coeffs.len();
         let mut result = ConvolutionPolynomial { coeffs: vec![0; n] };
 
@@ -88,7 +99,7 @@ impl ConvolutionPolynomial {
                 result.coeffs[(i + j) % n] += self.coeffs[i] * other.coeffs[j];
             }
         }
-      
+
         // If `m` is provided, then ensure that each coefficient lies in Z/mZ (which is the range [0,m])
         if let Some(m) = m {
             for i in 0..n {
@@ -112,15 +123,19 @@ impl ConvolutionPolynomial {
         m: i32,
     ) -> Result<(ConvolutionPolynomial, ConvolutionPolynomial), String> {
         let n = self.coeffs.len();
-        
+
         // Sanity checks
-        assert!(n == divisor.coeffs.len(), "divmod: Polynomials must be in the same ring");
-        assert!(!divisor.is_zero(), "divmod: Division by zero polynomial not permitted");
-        
+        assert!(
+            n == divisor.coeffs.len(),
+            "divmod: Polynomials must be in the same ring"
+        );
+        assert!(
+            !divisor.is_zero(),
+            "divmod: Division by zero polynomial not permitted"
+        );
+
         let mut remainder = self.clone();
-        let mut quotient = ConvolutionPolynomial {
-            coeffs: vec![0;n],
-        };
+        let mut quotient = ConvolutionPolynomial { coeffs: vec![0; n] };
 
         // Check whether the given divisor is valid by attempting to compute the multiplicative inverse of its leading coefficient
         let inverse_divisor_lc = if let Ok(inverse) = inverse(divisor.lc(), m) {
@@ -133,14 +148,16 @@ impl ConvolutionPolynomial {
             // Construct the term c * x^d
             let d = remainder.degree() - divisor.degree();
             let c = remainder.lc() * inverse_divisor_lc;
-            let term = ConvolutionPolynomial { coeffs: (0..n).map(|i| if i == d { c } else { 0 }).collect() };
+            let term = ConvolutionPolynomial {
+                coeffs: (0..n).map(|i| if i == d { c } else { 0 }).collect(),
+            };
 
             // Add the term to the quotient
             quotient = quotient.add(term.clone(), Some(m));
             // Subtract the term * divisor from the dividend
             remainder = remainder.sub(divisor.clone().mul(term, Some(m)), Some(m));
         }
-      
+
         Ok((quotient, remainder))
     }
 }
@@ -148,7 +165,7 @@ impl ConvolutionPolynomial {
 /// The Euclidean Algorithm. Return the greatest common divisor and a and b.
 fn gcd(a: i32, b: i32) -> i32 {
     let (mut a, mut b) = (a.clone(), b.clone());
-    
+
     while b != 0 {
         (a, b) = (b, a % b);
     }
@@ -178,3 +195,4 @@ fn inverse(a: i32, m: i32) -> Result<i32, String> {
     let (x, _) = extended_euclidean_algorithm(a, m);
     Ok(x.rem_euclid(m))
 }
+
