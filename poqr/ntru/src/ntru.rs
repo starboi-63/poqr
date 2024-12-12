@@ -6,18 +6,10 @@ const p: u32 = 3;
 const q: u32 = 419;
 const d: u32 = 23;
 
-pub fn encrypt(message: Vec<u8>) {
+pub fn encrypt(message: Vec<u8>) {}
 
-}
+pub fn decrypt() {}
 
-pub fn decrypt() {
+fn serialize() {}
 
-}
-
-fn serialize() {
-
-}
-
-fn deserialize() {
-
-}
+fn deserialize() {}
