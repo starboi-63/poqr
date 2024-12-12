@@ -11,6 +11,7 @@ pub fn encrypt(msg: Vec<u8>, k_pub: ConvolutionPolynomial) {}
 
 pub fn decrypt(enc_msg: ConvolutionPolynomial, k_priv: ConvolutionPolynomial) {}
 
+/// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients reperesenting that message
 fn serialize(plain_msg: Vec<u8>) -> ConvolutionPolynomial {
     assert!(
         plain_msg.len() <= N,
@@ -34,7 +35,10 @@ fn test_ser() {
     assert_eq!(serialize(msg_test_bytes).coeffs, vec![1, 0, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0]);
 }
 
+/// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
+/// Max value is 242
 fn ternary(mut c: i32) -> Vec<i32> {
+    assert!(c < 242, "5-index ternary can encode at max a value of 242");
     if c == 0 {
         return vec![0, 0, 0, 0, 0]
     }
@@ -58,6 +62,8 @@ fn ternary(mut c: i32) -> Vec<i32> {
     digits.into_iter().collect()
 }
 
+/// Deserializes a convolution polynomial into the message it represents as a vector
+/// of u8s
 fn deserialize(ser_msg: ConvolutionPolynomial) -> Vec<u8> {
     let coeffs = ser_msg.coeffs;
     let mut ret: Vec<u8> = Vec::new();
@@ -70,12 +76,17 @@ fn deserialize(ser_msg: ConvolutionPolynomial) -> Vec<u8> {
     ret
 }
 
+/// Takes a balanced ternary number in the form of an array and converts it to
+/// a decimal u8 (aka a char)
+/// Returns None if given a non valid char encoding
 fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     println!("Running out of ternary on: {:?}", ser_ch);
     if ser_ch.len() != 5 {
         return None
     }
     let mut ans = 0;
+    // We know every balanced ternary number will be 5 indices, so here's a fun little
+    // constant time deserialization :)
     ans += bal_tern_esc(ser_ch[4], 0);
     ans += bal_tern_esc(ser_ch[3], 1);
     ans += bal_tern_esc(ser_ch[2], 2);
@@ -87,6 +98,9 @@ fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     }
 } 
 
+/// Takes an index from an array representing a balanced ternary number
+/// and converts it to a decimal component of the decimal conversion, 
+/// dependent on its position in the array and index value.
 fn bal_tern_esc(n: i32, i: u32) -> i32 {
     if n == -1 {
         2 * 3_i32.pow(i)
