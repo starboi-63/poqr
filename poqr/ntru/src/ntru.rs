@@ -2,19 +2,31 @@ use crate::convolution_polynomial::*;
 use std::collections::VecDeque;
 
 // NTRU Parameters, derived by Tanish and Alex
-const N: u32 = 503;
-const P: u32 = 3;
-const Q: u32 = 419;
-const D: u32 = 23;
+const N: usize = 503;
+const P: usize = 3;
+const Q: i32 = 419;
+const D: usize = 23;
 
-pub fn encrypt(msg: Vec<u8>, k_pub: ConvPoly) {}
+pub fn encrypt(msg: Vec<u8>, k_pub: ConvPoly) -> ConvPoly {
+    assert!(msg.len() * 5 <= N, "encrypt: message too long");
+    // ASCII message serialized as a balanced ternary polynomial
+    let ser_msg = serialize(msg);
+    // Computed as a perturbation T(d, d)
+    let r_poly = ternary_polynomial(N, D, D);
+    // Compute the encoded message 
+    // e = r * h + m
+    let enc_msg = r_poly.mul(&k_pub, Some(Q)).add(&ser_msg, Some(Q));
+    enc_msg
+}
 
-pub fn decrypt(enc_msg: ConvPoly, k_priv: ConvPoly) {}
+pub fn decrypt(enc_msg: ConvPoly, k_priv: ConvPoly) -> ConvPoly {
+   let a = k_priv.mul(&enc_msg, Some(Q)); 
+}
 
 /// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients representing that message
 pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
     assert!(
-        plain_msg.len() * 5 <= N as usize,
+        plain_msg.len() * 5 <= N,
         "serialize: Message cannot exceed N - 1 in length"
     );
     let digit_vec = {
