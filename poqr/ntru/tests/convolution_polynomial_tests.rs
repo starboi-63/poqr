@@ -376,11 +376,26 @@ mod tests {
 
     #[test]
     fn test_gcd() {
+        // Test with positive numbers
         assert_eq!(gcd(48, 18), 6, "GCD of 48 and 18 should be 6");
         assert_eq!(gcd(101, 103), 1, "GCD of two primes should be 1");
         assert_eq!(gcd(2, 4), 2, "GCD of 2 and 4 should be 2");
         assert_eq!(gcd(72, 36), 36, "GCD of 72 and 36 should be 36");
         assert_eq!(gcd(72, 54), 18, "GCD of 72 and 54 should be 18");
+
+        // Test with two negative numbers
+        assert_eq!(gcd(-48, -18), 6, "GCD of -48 and -18 should be 6");
+        assert_eq!(gcd(-101, -103), 1, "GCD of two primes should be 1");
+        assert_eq!(gcd(-2, -4), 2, "GCD of -2 and -4 should be 2");
+        assert_eq!(gcd(-72, -36), 36, "GCD of -72 and -36 should be 36");
+        assert_eq!(gcd(-72, -54), 18, "GCD of -72 and -54 should be 18");
+
+        // Test with one positive and one negative number
+        assert_eq!(gcd(-48, 18), 6, "GCD of -48 and 18 should be 6");
+        assert_eq!(gcd(101, -103), 1, "GCD of 101 and -103 should be 1");
+        assert_eq!(gcd(-2, 4), 2, "GCD of -2 and 4 should be 2");
+        assert_eq!(gcd(72, -36), 36, "GCD of 72 and -36 should be 36");
+        assert_eq!(gcd(-72, 54), 18, "GCD of -72 and 54 should be 18");
 
         // Test with both a and b being zero
         assert!(std::panic::catch_unwind(|| {
@@ -397,16 +412,53 @@ mod tests {
 
     #[test]
     fn test_extended_gcd() {
-        // Test with random numbers
         let mut rng = rand::thread_rng();
         let num_tests = 100;
 
+        // Test with random positive numbers
         for _ in 0..num_tests {
             let (a, b) = (rng.gen_range(1..=1000), rng.gen_range(1..=1000));
             let (d, x, y) = extended_gcd(a, b);
 
             assert_eq!(d, gcd(a, b), "GCD calculation failed");
             assert_eq!(d, a * x + b * y, "Extended GCD calculation failed");
+        }
+
+        // Test with one random positive and one random negative number
+        for _ in 0..num_tests {
+            let (a, b) = (rng.gen_range(-1000..=-1), rng.gen_range(1..=1000));
+            let (d, x, y) = extended_gcd(a, b);
+
+            assert_eq!(d, gcd(a, b), "GCD calculation failed");
+            assert_eq!(
+                d,
+                a.abs() * x + b.abs() * y,
+                "Extended GCD calculation failed"
+            );
+        }
+        for _ in 0..num_tests {
+            let (a, b) = (rng.gen_range(1..=1000), rng.gen_range(-1000..=-1));
+            let (d, x, y) = extended_gcd(a, b);
+
+            assert_eq!(d, gcd(a, b), "GCD calculation failed");
+            assert_eq!(
+                d,
+                a.abs() * x + b.abs() * y,
+                "Extended GCD calculation failed"
+            );
+        }
+
+        // Test with both random negative numbers
+        for _ in 0..num_tests {
+            let (a, b) = (rng.gen_range(-1000..=-1), rng.gen_range(-1000..=-1));
+            let (d, x, y) = extended_gcd(a, b);
+
+            assert_eq!(d, gcd(a, b), "GCD calculation failed");
+            assert_eq!(
+                d,
+                a.abs() * x + b.abs() * y,
+                "Extended GCD calculation failed"
+            );
         }
 
         // Test with both a and b being zero
@@ -440,6 +492,16 @@ mod tests {
 
         let inv = inverse(3, 7).expect("Inverse should exist");
         assert_eq!(inv, 5, "Inverse modulo calculation failed");
+
+        // Prime modulus with negative input
+        let inv = inverse(-1, 7).expect("Inverse should exist");
+        assert_eq!(inv, 6, "Inverse modulo calculation failed");
+
+        let inv = inverse(-2, 7).expect("Inverse should exist");
+        assert_eq!(inv, 3, "Inverse modulo calculation failed");
+
+        let inv = inverse(-3, 7).expect("Inverse should exist");
+        assert_eq!(inv, 2, "Inverse modulo calculation failed");
 
         // No inverse exists
         assert!(

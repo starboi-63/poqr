@@ -11,8 +11,8 @@ pub fn encrypt(msg: Vec<u8>, k_pub: ConvPoly) {}
 
 pub fn decrypt(enc_msg: ConvPoly, k_priv: ConvPoly) {}
 
-/// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients reperesenting that message
-fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
+/// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients representing that message
+pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
     assert!(
         plain_msg.len() * 5 <= N as usize,
         "serialize: Message cannot exceed N - 1 in length"
@@ -25,20 +25,6 @@ fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
         temp
     };
     ConvPoly { coeffs: digit_vec }
-}
-
-#[test]
-fn test_ser() {
-    let msg_test = String::from("hello");
-    let msg_test_bytes = msg_test.as_bytes().to_vec();
-    println!(
-        "coeffs for test bytes: {:?}",
-        serialize(msg_test_bytes.clone()).coeffs
-    );
-    assert_eq!(
-        serialize(msg_test_bytes).coeffs,
-        vec![1, 0, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0]
-    );
 }
 
 /// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
@@ -70,7 +56,7 @@ fn ternary(mut c: i32) -> Vec<i32> {
 
 /// Deserializes a convolution polynomial into the message it represents as a vector
 /// of u8s
-fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
+pub fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
     let coeffs = ser_msg.coeffs;
     let mut ret: Vec<u8> = Vec::new();
     for chunk in coeffs.chunks(5) {
@@ -113,18 +99,4 @@ fn bal_tern_esc(n: i32, i: u32) -> i32 {
     } else {
         n * 3_i32.pow(i)
     }
-}
-
-#[test]
-fn test_ser_deser() {
-    let msg = "hello guys this is alex";
-    let ser_msg = {
-        let msg_bytes = String::from(msg).as_bytes().to_vec();
-        serialize(msg_bytes)
-    };
-    println!("Coeffs: {:?}", ser_msg.coeffs);
-    let deser = deserialize(ser_msg);
-    println!("deser: {}", String::from_utf8_lossy(&deser));
-    assert_eq!(msg.as_bytes().to_vec(), deser);
-    println!("characters in message: {}", msg.len());
 }

@@ -2,13 +2,8 @@ use rand::prelude::*;
 
 // TERNARY POLYNOMIALS
 
-/// Generates a random ternary polynomial of degree less than `n` with `num_ones` 1s and `num_neg_ones` -1s.
-/// The remaining coefficients are 0. The polynomial can be viewed as an element of the ring Z\[x\]/(x^n - 1).
-///
-/// ### Arguments
-/// * `n` - Modulus of the polynomial degree (i.e. x^n = 1)
-/// * `num_ones` - Number of coefficients equal to 1 in the polynomial
-/// * `num_neg_ones` - Number of coefficients equal to -1 in the polynomial
+/// Generates a random ternary convolution polynomial of degree less than `n` with `num_ones` 1s and `num_neg_ones`
+/// -1s. The remaining coefficients are 0. The polynomial can be viewed as an element of the ring Z\[x\]/(x^n - 1).
 pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> ConvPoly {
     // Sanity checks
     assert!(
@@ -177,40 +172,6 @@ impl ConvPoly {
     }
 
     // pub fn extended_gcd(&self, other: &ConvPoly, m: i32) -> (ConvPoly, ConvPoly, ConvPoly) {
-    //     let n = self.coeffs.len();
-
-    //     assert!(
-    //         n == other.coeffs.len(),
-    //         "Polynomials must be in the same ring"
-    //     );
-    //     assert!(
-    //         !self.is_zero() || !other.is_zero(),
-    //         "At least one of the polynomials must be non-zero"
-    //     );
-
-    //     let (mut a, mut b) = (self.clone(), other.clone());
-    //     let (mut x, mut y, mut z, mut w) = (
-    //         ConvPoly { coeffs: vec![0; n] },
-    //         ConvPoly { coeffs: vec![0; n] },
-    //         ConvPoly { coeffs: vec![0; n] },
-    //         ConvPoly { coeffs: vec![0; n] },
-    //     );
-    //     x.coeffs[0] = 1;
-    //     w.coeffs[0] = 1;
-
-    //     while !b.is_zero() {
-    //         let (q, r) = a.div(&b, m).unwrap();
-    //         a = b;
-    //         b = r;
-    //         let new_x = x.sub(&q.mul(&z, Some(m)), Some(m));
-    //         let new_y = y.sub(&q.mul(&w, Some(m)), Some(m));
-    //         x = z;
-    //         y = w;
-    //         z = new_x;
-    //         w = new_y;
-    //     }
-
-    //     (a, x, y)
     // }
 
     // Computes the inverse of the given polynomial within the ring (Z/mZ)\[x\]/(x^N - 1) using the
@@ -225,40 +186,56 @@ impl ConvPoly {
 /// The Euclidean Algorithm. Return the greatest common divisor and a and b.
 pub fn gcd(a: i32, b: i32) -> i32 {
     assert!(a != 0 || b != 0, "At least one of a and b must be non-zero");
-    let (mut a, mut b) = (a.clone(), b.clone());
+    // Let a = bq + r (division algo). This algorithm works because gcd(a, b) = gcd(b, r) since
+    // if a number divides a and b, then it divides a - bq = r. We can therefore
+    // keep taking the remainder and shift until r is 0 (which is guaranteed to happen)
+    let (mut old_r, mut r) = (a.clone().abs(), b.clone().abs());
 
-    while b != 0 {
-        (a, b) = (b, a % b);
+    while r != 0 {
+        (old_r, r) = (r, old_r % r);
     }
 
-    a
+    old_r
 }
 
-/// The Extended Euclidean Algorithm. Returns (gcd, x, y) such that a*x + b*y = gcd(a, b).
+/// The Extended Euclidean Algorithm. Returns (gcd, x, y) such that ax + by = gcd(a, b).
+/// If negative inputs are provided, the algorithm will use their absolute values.
 pub fn extended_gcd(a: i32, b: i32) -> (i32, i32, i32) {
     assert!(a != 0 || b != 0, "At least one of a and b must be non-zero");
-    let (mut a, mut b) = (a.clone(), b.clone());
-    let (mut x, mut y, mut z, mut w) = (1, 0, 0, 1);
+    // Initial state
+    // a = 1a + 0b  -->  old_r = a(old_x) + b(old_y)  so `old_r` is a linear combination of a,b
+    // b = 0a + 1b  -->  r = ax + by                  so `r` is also a linear combination of a,b
+    //
+    // Update step
+    // Let old_r = rq + new_r (division algo). Then because of the above, new_r = old_r - rq is still
+    // a linear combination of a,b with new_x = old_x - xq and new_y = old_y - yq. By induction, we can
+    // continue assigning new_r to r like this until r = 0 (which we know will happen by the standard
+    // Euclidean Algorithm) and be left with Bézout coefficients.
+    let (mut old_r, mut old_x, mut old_y) = (a.clone().abs(), 1, 0);
+    let (mut r, mut x, mut y) = (b.clone().abs(), 0, 1);
 
-    while b != 0 {
-        (x, y, z, w) = (z, w, x - (a / b) * z, y - (a / b) * w);
-        (a, b) = (b, a % b);
+    while r != 0 {
+        let q = old_r / r;
+        (old_r, r) = (r, old_r % r);
+        (old_x, x) = (x, old_x - x * q);
+        (old_y, y) = (y, old_y - y * q);
     }
 
-    (a, x, y)
+    (old_r, old_x, old_y)
 }
 
 /// Returns the multiplicative inverse of `a` within the unit group (Z/mZ)*. Returns an error if no
 /// such inverse exists (i.e. if `a` is not relatively prime to `m`, and therefore not a member of the group).
 pub fn inverse(a: i32, m: i32) -> Result<i32, String> {
+    assert!(m > 0, "Modulus `m` must be a positive integer");
+
     if a == 0 {
         return Err("The multiplicative inverse of 0 does not exist.".to_string());
     }
-
     if gcd(a, m) != 1 {
         return Err("`a` only has an inverse (mod m) if it is relatively prime to m.".to_string());
     }
 
-    let (_, x, _) = extended_gcd(a, m);
+    let (_, x, _) = extended_gcd(a.rem_euclid(m), m);
     Ok(x.rem_euclid(m))
 }
