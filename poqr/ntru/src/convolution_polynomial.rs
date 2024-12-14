@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use std::fmt;
 
 // TERNARY POLYNOMIALS
 
@@ -34,9 +35,40 @@ pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> Con
 
 /// A polynomial in the ring of convolution polynomials Z\[x\]/(x^N - 1). Here, N is the modulus of the polynomial
 /// degree, and equals the length of the `coeffs` vector.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ConvPoly {
     pub coeffs: Vec<i32>, // Coefficients of the polynomial such that coeffs[i] is the coefficient of x^i
+}
+
+/// Display implementation for convolution polynomials. The polynomial is displayed in the form
+/// c0 + c1x + c2x^2 + ... + cnx^n where c0, c1, ..., cn are the coefficients of the polynomial.
+impl fmt::Display for ConvPoly {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut terms = Vec::new();
+        for (i, &coeff) in self.coeffs.iter().enumerate() {
+            if coeff != 0 {
+                let coeff_str = if coeff == 1 {
+                    "".to_string()
+                } else if coeff == -1 {
+                    "-".to_string()
+                } else {
+                    coeff.to_string()
+                };
+                let term = match i {
+                    0 => format!("{}", coeff),
+                    1 => format!("{}x", coeff_str),
+                    _ => format!("{}x^{}", coeff_str, i),
+                };
+                terms.push(term);
+            }
+        }
+
+        if terms.is_empty() {
+            write!(f, "0")
+        } else {
+            write!(f, "{}", terms.join(" + ").replace("+ -", "- "))
+        }
+    }
 }
 
 impl ConvPoly {
@@ -126,11 +158,11 @@ impl ConvPoly {
         // Sanity checks
         assert!(
             n == divisor.coeffs.len(),
-            "divmod: Polynomials must be in the same ring"
+            "Polynomials must be in the same ring"
         );
         assert!(
             !divisor.is_zero(),
-            "divmod: Division by zero polynomial not permitted"
+            "Division by zero polynomial not permitted"
         );
 
         let mut remainder = self.clone();
@@ -143,68 +175,117 @@ impl ConvPoly {
             return Err("Invalid divisor polynomial; no multiplicative inverse for its leading coefficient (mod m)".to_string());
         };
 
-        while remainder.deg() >= divisor.deg() {
+        while remainder.deg() >= divisor.deg() && !remainder.is_zero() {
             // Construct the term c * x^d
             let d = remainder.deg() - divisor.deg();
+            println!("d: {}", d);
             let c = (remainder.lc() * inverse_divisor_lc).rem_euclid(m);
+            println!("c: {}", c);
             let term = ConvPoly {
                 coeffs: (0..n).map(|i| if i == d { c } else { 0 }).collect(),
             };
-
+            println!("term: {}", term);
             // Add the term to the quotient
             quotient = quotient.add(&term).modulo(m);
             // Subtract the term * divisor from the dividend
             remainder = remainder.sub(&divisor.clone().mul(&term)).modulo(m);
+            println!("quotient (updated): {}", quotient);
+            println!("remainder (updated): {}", remainder);
         }
 
         Ok((quotient, remainder))
     }
 
     /// The Extended Euclidean Algorithm for polynomials. Returns (gcd, s(x), t(x)) such that
-    /// a(x)s(x) + b(x)t(x) = gcd(a(x), b(x)) within the ring (Z/mZ)\[x\]/(x^N - 1).
-    // pub fn extended_gcd(a: &ConvPoly, b: &ConvPoly, m: i32) -> (ConvPoly, ConvPoly, ConvPoly) {
-    //     // Sanity checks
-    //     assert!(
-    //         a.coeffs.len() == b.coeffs.len(),
-    //         "Polynomials should be part of the same ring"
-    //     );
-    //     assert!(
-    //         !a.is_zero() || !b.is_zero(),
-    //         "At least one of the polynomials must be non-zero"
-    //     );
-    //     // Initial state
-    //     // a(x) = 1a(x) + 0b(x)  -->  old_r(x) = a(x)old_s(x) + b(x)old_t(x)  so old_r(x) is a linear combination of a(x),b(x)
-    //     // b(x) = 0a(x) + 1b(x)  -->  r(x) = a(x)s(x) + b(x)t(x)              so r(x) is also a linear combination of a(x),b(x)
-    //     //
-    //     // Update step
-    //     // Let old_r(x) = r(x)q(x) + new_r(x) (polynomial division algo). Then because of the above, new_r(x) = old_r(x) - r(x)q(x)
-    //     // is still a linear combination of a(x),b(x) with new_s(x) = old_s(x) - s(x)q(x) and new_t(x) = old_t(x) - t(x)q(x). By
-    //     // induction, we can continue assigning new_r(x) to r(x) like this until r(x) = 0 (which we know will happen by the standard
-    //     // Euclidean Algorithm) and be left with Bézout polynomial coefficients.
-    //     let n = a.coeffs.len();
-    //     let (mut old_r, mut old_s, mut old_t) = (
-    //         a.clone(),
-    //         ConvPoly::constant(1, n),
-    //         ConvPoly::constant(0, n),
-    //     );
-    //     let (mut r, mut s, mut t) = (
-    //         b.clone(),
-    //         ConvPoly::constant(0, n),
-    //         ConvPoly::constant(1, n),
-    //     );
+    /// a(x)s(x) + b(x)t(x) = gcd(a(x), b(x)) within the ring (Z/mZ)\[x\]/(x^N - 1). Returns an error
+    /// if division fails at any point (which occurs when the leading coefficient of the divisor isn't
+    /// a unit in the ring Z/mZ).
+    pub fn extended_gcd(
+        a: &ConvPoly,
+        b: &ConvPoly,
+        m: i32,
+    ) -> Result<(ConvPoly, ConvPoly, ConvPoly), String> {
+        // Sanity checks
+        assert!(
+            a.coeffs.len() == b.coeffs.len(),
+            "Polynomials should be part of the same ring"
+        );
+        assert!(
+            !a.is_zero() || !b.is_zero(),
+            "At least one of the polynomials must be non-zero"
+        );
+        assert!(m > 0, "Modulus `m` must be a positive integer");
+        // Initial state
+        // a(x) = 1a(x) + 0b(x)  -->  old_r(x) = a(x)old_s(x) + b(x)old_t(x)  so old_r(x) is a linear combination of a(x),b(x)
+        // b(x) = 0a(x) + 1b(x)  -->  r(x) = a(x)s(x) + b(x)t(x)              so r(x) is also a linear combination of a(x),b(x)
+        //
+        // Update step
+        // Let old_r(x) = r(x)q(x) + new_r(x) (polynomial division algo). Then because of the above, new_r(x) = old_r(x) - r(x)q(x)
+        // is still a linear combination of a(x),b(x) with new_s(x) = old_s(x) - s(x)q(x) and new_t(x) = old_t(x) - t(x)q(x). By
+        // induction, we can continue assigning new_r(x) to r(x) like this until r(x) = 0 (which we know will happen by the standard
+        // Euclidean Algorithm) and be left with Bézout polynomial coefficients.
+        let n = a.coeffs.len();
+        let (mut old_r, mut old_s, mut old_t) = (
+            a.clone(),
+            ConvPoly::constant(1, n),
+            ConvPoly::constant(0, n),
+        );
+        let (mut r, mut s, mut t) = (
+            b.clone(),
+            ConvPoly::constant(0, n),
+            ConvPoly::constant(1, n),
+        );
 
-    //     while !r.is_zero() {
-    //         let (q, new_r) = old_r.div_mod(&r, m).unwrap();
-    //         (old_r, r) =
-    //     }
+        while !r.is_zero() {
+            println!();
+            println!("old_r: {}, r: {}", old_r, r);
+            let (q, new_r) = old_r.div_mod(&r, m)?;
+            println!("q: {}, new_r: {}", q, new_r);
+            (old_r, r) = (r, new_r);
+            (old_s, s) = (s.clone(), old_s.sub(&s.mul(&q)).modulo(m));
+            (old_t, t) = (t.clone(), old_t.sub(&t.mul(&q)).modulo(m));
+            println!("old_s: {}, s: {}", old_s, s);
+            println!("old_t: {}, t: {}", old_t, t);
+        }
 
-    //     (old_r, old_s, old_t)
-    // }
+        Ok((old_r, old_s, old_t))
+    }
 
-    // Computes the inverse of the given polynomial within the ring (Z/mZ)\[x\]/(x^N - 1) using the
-    // Extended Euclidean Algorithm. Returns `None`` if the polynomial is not invertible.
-    pub fn inverse(&self, m: i32) -> Option<ConvPoly> {
-        todo!()
+    /// Computes the inverse of the given polynomial within the ring (Z/mZ)\[x\]/(x^N - 1)
+    /// using the Extended Euclidean Algorithm. Returns an error if the polynomial is not invertible.
+    pub fn inverse(&self, m: i32) -> Result<ConvPoly, String> {
+        if self.is_zero() {
+            return Err("The inverse of the zero polynomial does not exist.".to_string());
+        }
+
+        // Create the modulus polynomial x^n - 1
+        let n = self.coeffs.len();
+        let modulus = ConvPoly {
+            coeffs: {
+                let mut coeffs = vec![0; n + 1];
+                (coeffs[0], coeffs[n]) = (-1, 1);
+                coeffs
+            },
+        };
+        // Extend `self` to a polynomial in the ring Z[x]/(x^{n+1} - 1) to match the length of the modulus
+        let self_ext = ConvPoly {
+            coeffs: {
+                let mut coeffs = self.coeffs.clone();
+                coeffs.push(0);
+                coeffs
+            },
+        };
+
+        // After computing gcd, remove the extra coefficient from the polynomials to bring them back to the original ring
+        let (mut gcd, mut s, _) = ConvPoly::extended_gcd(&self_ext, &modulus, m)?;
+        gcd.coeffs.pop();
+        s.coeffs.pop();
+
+        if gcd != ConvPoly::constant(1, n) {
+            return Err("The polynomial is not invertible in the given ring.".to_string());
+        }
+
+        Ok(s)
     }
 }
 
@@ -259,10 +340,15 @@ pub fn inverse(a: i32, m: i32) -> Result<i32, String> {
     if a == 0 {
         return Err("The multiplicative inverse of 0 does not exist.".to_string());
     }
-    if gcd(a, m) != 1 {
-        return Err("`a` only has an inverse (mod m) if it is relatively prime to m.".to_string());
+
+    let (gcd, x, _) = extended_gcd(a.rem_euclid(m), m);
+
+    if gcd != 1 {
+        return Err(
+            "`a` only has a multiplicative inverse (mod m) if it is relatively prime to m."
+                .to_string(),
+        );
     }
 
-    let (_, x, _) = extended_gcd(a.rem_euclid(m), m);
     Ok(x.rem_euclid(m))
 }
