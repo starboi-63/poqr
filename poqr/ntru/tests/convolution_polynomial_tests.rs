@@ -495,7 +495,7 @@ mod tests {
                 coeffs: vec![7, 3, 1, 0, 0], // x^2 + 3x + 7
             };
             let expected_inverse = ConvPoly {
-                coeffs: vec![1, 0, 1, 1, 0], // x^3 + x^2 + 1
+                coeffs: vec![0, 1, 1, 0, 1], // x^4 + x^2 + x
             };
             let inverse = poly.inverse(2).unwrap();
             assert_eq!(
@@ -508,7 +508,7 @@ mod tests {
                 coeffs: vec![22, 11, 5, 7, 0], // 7x^3 + 5x^2 + 11x + 22
             };
             let expected_inverse = ConvPoly {
-                coeffs: vec![1, 0, 1, 1, 0], // x^3 + x^2 + 1
+                coeffs: vec![1, 1, 0, 1, 0], // x^3 + x + 1
             };
             let inverse = poly.inverse(2).unwrap();
             assert_eq!(
@@ -521,7 +521,7 @@ mod tests {
                 coeffs: vec![112, 34, 239, 234, 105, 180, 137], // 137x^6 + 180x^5 + 105x^4 + 234x^3 + 239x^2 + 34x + 112
             };
             let expected_inverse = ConvPoly {
-                coeffs: vec![1, 0, 3, 0, 2, 0, 0], // 2x^4 + 3x^2 + 1
+                coeffs: vec![2, 0, 0, 1, 0, 3, 0], // 3x^5 + x^3 + 2
             };
             let inverse = poly.inverse(5).unwrap();
             assert_eq!(

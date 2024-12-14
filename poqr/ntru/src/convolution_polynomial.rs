@@ -41,7 +41,7 @@ pub struct ConvPoly {
 }
 
 /// Display implementation for convolution polynomials. The polynomial is displayed in the form
-/// c0 + c1x + c2x^2 + ... + cnx^n where c0, c1, ..., cn are the coefficients of the polynomial.
+/// "c0 + c1x + c2x^2 + ... + cnx^n" where c0, c1, ..., cn are the coefficients of the polynomial.
 impl fmt::Display for ConvPoly {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut terms = Vec::new();
@@ -66,6 +66,7 @@ impl fmt::Display for ConvPoly {
         if terms.is_empty() {
             write!(f, "0")
         } else {
+            terms.reverse();
             write!(f, "{}", terms.join(" + ").replace("+ -", "- "))
         }
     }
@@ -178,22 +179,48 @@ impl ConvPoly {
         while remainder.deg() >= divisor.deg() && !remainder.is_zero() {
             // Construct the term c * x^d
             let d = remainder.deg() - divisor.deg();
-            println!("d: {}", d);
             let c = (remainder.lc() * inverse_divisor_lc).rem_euclid(m);
-            println!("c: {}", c);
             let term = ConvPoly {
                 coeffs: (0..n).map(|i| if i == d { c } else { 0 }).collect(),
             };
-            println!("term: {}", term);
             // Add the term to the quotient
             quotient = quotient.add(&term).modulo(m);
             // Subtract the term * divisor from the dividend
             remainder = remainder.sub(&divisor.clone().mul(&term)).modulo(m);
-            println!("quotient (updated): {}", quotient);
-            println!("remainder (updated): {}", remainder);
         }
 
         Ok((quotient, remainder))
+    }
+
+    pub fn gcd(a: &ConvPoly, b: &ConvPoly, m: i32) -> Result<ConvPoly, String> {
+        // Sanity checks
+        assert!(
+            a.coeffs.len() == b.coeffs.len(),
+            "Polynomials should be part of the same ring"
+        );
+        assert!(
+            !a.is_zero() || !b.is_zero(),
+            "At least one of the polynomials must be non-zero"
+        );
+        assert!(m > 0, "Modulus `m` must be a positive integer");
+        // Let a(x) = b(x)q(x) + r(x) (polynomial division algo). This algorithm works because
+        // gcd(a(x), b(x)) = gcd(b(x), r(x)) since if a number divides a(x) and b(x), then it divides
+        // a(x) - b(x)q(x) = r(x). We can therefore keep taking the remainder and shift until r(x) is 0
+        // (which is guaranteed to happen) and be left with the gcd.
+        let (mut old_r, mut r) = (a.clone(), b.clone());
+
+        while !r.is_zero() {
+            let (_, new_r) = old_r.div_mod(&r, m)?;
+            (old_r, r) = (r, new_r);
+        }
+
+        // Normalize the gcd by dividing by its leading coefficient, if possible
+        if let Ok(inverse) = inverse(old_r.lc(), m) {
+            let inverse_poly = ConvPoly::constant(inverse, old_r.coeffs.len());
+            old_r = old_r.mul(&inverse_poly).modulo(m);
+        }
+
+        Ok(old_r)
     }
 
     /// The Extended Euclidean Algorithm for polynomials. Returns (gcd, s(x), t(x)) such that
@@ -237,15 +264,18 @@ impl ConvPoly {
         );
 
         while !r.is_zero() {
-            println!();
-            println!("old_r: {}, r: {}", old_r, r);
             let (q, new_r) = old_r.div_mod(&r, m)?;
-            println!("q: {}, new_r: {}", q, new_r);
             (old_r, r) = (r, new_r);
             (old_s, s) = (s.clone(), old_s.sub(&s.mul(&q)).modulo(m));
             (old_t, t) = (t.clone(), old_t.sub(&t.mul(&q)).modulo(m));
-            println!("old_s: {}, s: {}", old_s, s);
-            println!("old_t: {}, t: {}", old_t, t);
+        }
+
+        // Normalize the solution by dividing by the gcd's leading coefficient, if possible
+        if let Ok(inverse) = inverse(old_r.lc(), m) {
+            let inverse_poly = ConvPoly::constant(inverse, n);
+            old_r = old_r.mul(&inverse_poly).modulo(m);
+            old_s = old_s.mul(&inverse_poly).modulo(m);
+            old_t = old_t.mul(&inverse_poly).modulo(m);
         }
 
         Ok((old_r, old_s, old_t))
