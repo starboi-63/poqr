@@ -1,5 +1,5 @@
 use crate::convolution_polynomial::{ternary_polynomial, ConvPoly};
-use crate::ntru::serialize;
+use crate::ntru_util::serialize;
 use crate::params::*;
 
 /// An NTRU key pair
