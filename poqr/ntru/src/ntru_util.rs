@@ -21,7 +21,10 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
 /// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
 /// Max value is 242
 fn ternary(mut c: i32) -> Vec<i32> {
-    assert!(c < 242, "5-index ternary can encode at max a value of 242");
+    assert!(
+        c < 242 && c >= 0,
+        "5-index ternary can encode at max a positive value less than 242"
+    );
     if c == 0 {
         return vec![0, 0, 0, 0, 0];
     }
