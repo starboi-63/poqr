@@ -21,11 +21,17 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
 /// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
 /// Max value is 242
 fn ternary(mut c: i32) -> Vec<i32> {
-    assert!(c < 242, "5-index ternary can encode at max a value of 242");
+    // Sanity checking
+    assert!(
+        c < 242 && c >= 0,
+        "5-index ternary can encode at max a positive value less than 242"
+    );
+    // Base case
     if c == 0 {
         return vec![0, 0, 0, 0, 0];
     }
     let mut digits: VecDeque<i32> = VecDeque::new();
+    // Ternary conversion ; due to sanity checks should not exceed 5 digits
     while c > 0 {
         let rem: i32 = {
             let rem_temp = c % 3;
@@ -38,7 +44,9 @@ fn ternary(mut c: i32) -> Vec<i32> {
         };
         digits.push_front(rem);
     }
-    //NOTE: Might wanna find a nicer way of doing this
+    //NOTE : Make this nicer
+    //
+    // Pad with zeros on less than 5 digit cases
     while digits.len() < 5 {
         digits.push_front(0);
     }
@@ -63,7 +71,6 @@ pub fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
 /// a decimal u8 (aka a char)
 /// Returns None if given a non valid char encoding
 fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
-    println!("Running out of ternary on: {:?}", ser_ch);
     if ser_ch.len() != 5 {
         return None;
     }
@@ -75,13 +82,19 @@ fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     ans += bal_tern_esc(ser_ch[2], 2);
     ans += bal_tern_esc(ser_ch[1], 3);
     ans += bal_tern_esc(ser_ch[0], 4);
+    // If value is for some reason not a u8, returns None
     match u8::try_from(ans) {
         Ok(a) => Some(a),
-        Err(_) => None,
+        Err(_) => {
+            eprintln!(
+                "out_of_ternary: Shouldn't try to deserialize a non u8 representable character"
+            );
+            None
+        }
     }
 }
 
-/// Takes an index from an array representing a balanced ternary number
+/// Takes a value from an array representing a balanced ternary number
 /// and converts it to a decimal component of the decimal conversion,
 /// dependent on its position in the array and index value.
 fn bal_tern_esc(n: i32, i: u32) -> i32 {
