@@ -34,6 +34,15 @@ mod tests {
     }
 
     #[test]
+    fn test_constant_convolution_polynomial() {
+        let poly = ConvPoly::constant(5, 3);
+        assert_eq!(poly.coeffs, vec![5, 0, 0], "Constant polynomial failed");
+
+        let poly = ConvPoly::constant(-5, 3);
+        assert_eq!(poly.coeffs, vec![-5, 0, 0], "Constant polynomial failed");
+    }
+
+    #[test]
     fn test_convolution_polynomial_deg() {
         // Normal polynomial
         let poly = ConvPoly {
@@ -96,6 +105,35 @@ mod tests {
     }
 
     #[test]
+    fn test_convolution_polynomial_modulo() {
+        // Modulo 5
+        let poly = ConvPoly {
+            coeffs: vec![1, 2, 3, 4, 5], // 5x^4 + 4x^3 + 3x^2 + 2x + 1
+        };
+        let expected_result = ConvPoly {
+            coeffs: vec![1, 2, 3, 4, 0], // 4x^3 + 3x^2 + 2x + 1
+        };
+        let result = poly.modulo(5);
+        assert_eq!(expected_result.coeffs, result.coeffs, "Modulo 5 failed");
+
+        // Modulo 5 with negative coefficients
+        let poly = ConvPoly {
+            coeffs: vec![1, -2, 3, -4, 5], // 5x^4 - 4x^3 + 3x^2 - 2x + 1
+        };
+        let expected_result = ConvPoly {
+            coeffs: vec![1, 3, 3, 1, 0], // x^3 + 3x^2 + 3x + 1
+        };
+        let result = poly.modulo(5);
+        assert_eq!(expected_result.coeffs, result.coeffs, "Modulo 5 failed");
+
+        // Modulo 5 with all coefficients being zero
+        let poly = ConvPoly { coeffs: vec![0; 5] };
+        let expected_result = ConvPoly { coeffs: vec![0; 5] };
+        let result = poly.modulo(5);
+        assert_eq!(expected_result.coeffs, result.coeffs, "Modulo 5 failed");
+    }
+
+    #[test]
     fn test_convolution_polynomial_add() {
         // Addition without modulo
         let poly1 = ConvPoly {
@@ -107,7 +145,7 @@ mod tests {
         let expected_sum = ConvPoly {
             coeffs: vec![6, 5, 4], // 4x^2 + 5x + 6
         };
-        let sum = poly1.add(&poly2, None);
+        let sum = poly1.add(&poly2);
         assert_eq!(
             expected_sum.coeffs, sum.coeffs,
             "Addition without modulo failed"
@@ -123,12 +161,15 @@ mod tests {
         let expected_sum = ConvPoly {
             coeffs: vec![6, -1, 4], // 4x^2 - x + 6
         };
-        let sum = poly1.add(&poly2, None);
+        let sum = poly1.add(&poly2);
         assert_eq!(
             expected_sum.coeffs, sum.coeffs,
             "Addition without modulo failed"
         );
+    }
 
+    #[test]
+    fn test_convolution_polynomial_add_mod() {
         // Modulo 5 addition without wraparound
         let poly1 = ConvPoly {
             coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
@@ -139,7 +180,7 @@ mod tests {
         let expected_sum = ConvPoly {
             coeffs: vec![4, 4, 4], // 4x^2 + 4x + 4
         };
-        let sum = poly1.add(&poly2, Some(5));
+        let sum = poly1.add_mod(&poly2, 5);
         assert_eq!(expected_sum.coeffs, sum.coeffs, "Addition modulo 5 failed");
 
         // Modulo 5 addition with wraparound
@@ -152,7 +193,7 @@ mod tests {
         let expected_sum = ConvPoly {
             coeffs: vec![1, 2, 2], // 2x^2 + 2x + 1
         };
-        let sum = poly1.add(&poly2, Some(5));
+        let sum = poly1.add_mod(&poly2, 5);
         assert_eq!(expected_sum.coeffs, sum.coeffs, "Addition modulo 5 failed");
     }
 
@@ -168,7 +209,7 @@ mod tests {
         let expected_diff = ConvPoly {
             coeffs: vec![2, 1, 0], // x + 2
         };
-        let diff = poly1.sub(&poly2, None);
+        let diff = poly1.sub(&poly2);
         assert_eq!(
             expected_diff.coeffs, diff.coeffs,
             "Subtraction without modulo failed"
@@ -184,12 +225,15 @@ mod tests {
         let expected_diff = ConvPoly {
             coeffs: vec![2, -5, -1], // -x^2 - 5x + 2
         };
-        let diff = poly1.sub(&poly2, None);
+        let diff = poly1.sub(&poly2);
         assert_eq!(
             expected_diff.coeffs, diff.coeffs,
             "Subtraction without modulo failed"
         );
+    }
 
+    #[test]
+    fn test_convolution_polynomial_sub_mod() {
         // Modulo 5 subtraction without wraparound
         let poly1 = ConvPoly {
             coeffs: vec![4, 3, 2], // 2x^2 + 3x + 4
@@ -200,7 +244,7 @@ mod tests {
         let expected_diff = ConvPoly {
             coeffs: vec![2, 1, 0], // x + 2
         };
-        let diff = poly1.sub(&poly2, Some(5));
+        let diff = poly1.sub_mod(&poly2, 5);
         assert_eq!(
             expected_diff.coeffs, diff.coeffs,
             "Subtraction modulo 5 failed"
@@ -216,7 +260,7 @@ mod tests {
         let expected_diff = ConvPoly {
             coeffs: vec![2, 2, 2], // 2x^2 + 2x + 2
         };
-        let diff = poly1.sub(&poly2, Some(5));
+        let diff = poly1.sub_mod(&poly2, 5);
         assert_eq!(
             expected_diff.coeffs, diff.coeffs,
             "Subtraction modulo 5 failed"
@@ -231,7 +275,7 @@ mod tests {
         };
         let poly2 = ConvPoly { coeffs: vec![0; 3] }; // 0
         let expected_product = ConvPoly { coeffs: vec![0; 3] }; // 0
-        let product = poly1.mul(&poly2, None);
+        let product = poly1.mul(&poly2);
         assert_eq!(
             expected_product.coeffs, product.coeffs,
             "Multiplication by zero failed"
@@ -247,7 +291,7 @@ mod tests {
         let expected_product = ConvPoly {
             coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
         };
-        let product = poly1.mul(&poly2, None);
+        let product = poly1.mul(&poly2);
         assert_eq!(
             expected_product.coeffs, product.coeffs,
             "Multiplication by one failed"
@@ -263,7 +307,7 @@ mod tests {
         let expected_product = ConvPoly {
             coeffs: vec![-1, -2, -3], // 3x^2 + 2x + 1
         };
-        let product = poly1.mul(&poly2, None);
+        let product = poly1.mul(&poly2);
         assert_eq!(
             expected_product.coeffs, product.coeffs,
             "Multiplication by one failed"
@@ -279,12 +323,15 @@ mod tests {
         let expected_product = ConvPoly {
             coeffs: vec![-13, 20, -7, 19, 5], // 5x^4 + 19x^3 - 7x^2 + 20x - 13
         };
-        let product = poly1.mul(&poly2, None);
+        let product = poly1.mul(&poly2);
         assert_eq!(
             expected_product.coeffs, product.coeffs,
             "Multiplication failed"
         );
+    }
 
+    #[test]
+    fn test_convolution_polynomial_mul_mod() {
         // Example in the ring (Z/11Z)[x]/(x^5 - 1)
         let poly1 = ConvPoly {
             coeffs: vec![1, -2, 0, 4, -1], // -x^4 + 4x^3 - 2x + 1
@@ -295,7 +342,7 @@ mod tests {
         let expected_product = ConvPoly {
             coeffs: vec![9, 9, 4, 8, 5], // 5x^4 + 8x^3 + 4x^2 + 9x + 10
         };
-        let product = poly1.mul(&poly2, Some(11));
+        let product = poly1.mul_mod(&poly2, 11);
         assert_eq!(
             expected_product.coeffs, product.coeffs,
             "Multiplication modulo 11 failed"
@@ -303,7 +350,7 @@ mod tests {
     }
 
     #[test]
-    fn test_convolution_polynomial_div() {
+    fn test_convolution_polynomial_div_mod() {
         // Division by self
         let poly1 = ConvPoly {
             coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
@@ -317,7 +364,7 @@ mod tests {
         let expected_remainder = ConvPoly {
             coeffs: vec![0, 0, 0], // 0
         };
-        let (quotient, remainder) = poly1.div(&poly2, 5).unwrap();
+        let (quotient, remainder) = poly1.div_mod(&poly2, 5).unwrap();
         assert_eq!(
             expected_quotient.coeffs, quotient.coeffs,
             "Division quotient failed"
@@ -340,7 +387,7 @@ mod tests {
         let expected_remainder = ConvPoly {
             coeffs: vec![1, 1, 1, 0, 0, 0], // x^2 + x + 1
         };
-        let (quotient, remainder) = poly1.div(&poly2, 2).unwrap();
+        let (quotient, remainder) = poly1.div_mod(&poly2, 2).unwrap();
         assert_eq!(
             expected_quotient.coeffs, quotient.coeffs,
             "Division quotient failed"
@@ -363,7 +410,7 @@ mod tests {
         let expected_remainder = ConvPoly {
             coeffs: vec![1, 0, 0, 0, 0, 0], // 1
         };
-        let (quotient, remainder) = poly1.div(&poly2, 2).unwrap();
+        let (quotient, remainder) = poly1.div_mod(&poly2, 2).unwrap();
         assert_eq!(
             expected_quotient.coeffs, quotient.coeffs,
             "Division quotient failed"

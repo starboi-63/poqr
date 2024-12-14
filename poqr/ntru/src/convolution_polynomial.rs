@@ -40,6 +40,13 @@ pub struct ConvPoly {
 }
 
 impl ConvPoly {
+    /// Constructs a constant polynomial f(x) = c in the ring Z\[x\]/(x^n - 1).
+    pub fn constant(c: i32, n: usize) -> ConvPoly {
+        ConvPoly {
+            coeffs: (0..n).map(|i| if i == 0 { c } else { 0 }).collect(),
+        }
+    }
+
     /// Returns the degree of the polynomial (i.e. the highest power of x with a non-zero coefficient)
     pub fn deg(&self) -> usize {
         self.coeffs.iter().rposition(|&x| x != 0).unwrap_or(0)
@@ -55,54 +62,44 @@ impl ConvPoly {
         self.coeffs[self.deg()]
     }
 
-    /// Adds another polynomial to this one by adding the corresponding coefficients. If `m` is
-    /// provided, the addition is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
-    /// of Z\[x\]/(x^N - 1)).
-    pub fn add(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
-        assert!(
-            self.coeffs.len() == other.coeffs.len(),
-            "Polynomials should be part of the same ring"
-        ); // Sanity check
+    /// Applies the modulus operation to each coefficient of the polynomial and returns the result,
+    /// which lies in the ring (Z/mZ)\[x\]/(x^N - 1). The modulus `m` must be a positive integer.
+    pub fn modulo(&self, m: i32) -> ConvPoly {
+        assert!(m > 0, "Modulus `m` must be a positive integer");
 
-        let n = self.coeffs.len();
-        let mut result = ConvPoly { coeffs: vec![0; n] };
-
-        for i in 0..n {
-            result.coeffs[i] = self.coeffs[i] + other.coeffs[i];
-            if let Some(m) = m {
-                result.coeffs[i] = result.coeffs[i].rem_euclid(m);
-            }
+        ConvPoly {
+            coeffs: self.coeffs.iter().map(|x| x.rem_euclid(m)).collect(),
         }
-
-        result
     }
 
-    /// Subtracts another polynomial from this one by subtracting the corresponding coefficients. If `m` is
-    /// provided, the subtraction is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
-    /// of Z\[x\]/(x^N - 1)).
-    pub fn sub(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
+    /// Adds another polynomial to this one by adding the corresponding coefficients.
+    pub fn add(&self, other: &ConvPoly) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
         ); // Sanity check
 
         let n = self.coeffs.len();
-        let mut result = ConvPoly { coeffs: vec![0; n] };
-
-        for i in 0..n {
-            result.coeffs[i] = self.coeffs[i] - other.coeffs[i];
-            if let Some(m) = m {
-                result.coeffs[i] = result.coeffs[i].rem_euclid(m);
-            }
+        ConvPoly {
+            coeffs: (0..n).map(|i| self.coeffs[i] + other.coeffs[i]).collect(),
         }
-
-        result
     }
 
-    /// Multiplies this polynomial by another using the convolution operation in the ring. If `m` is
-    /// provided, the multiplication is performed modulo `m` (i.e. in the ring (Z/mZ)\[x\]/(x^N - 1) instead
-    /// of Z\[x\]/(x^N - 1)).
-    pub fn mul(self, other: &ConvPoly, m: Option<i32>) -> ConvPoly {
+    /// Subtracts another polynomial from this one by subtracting the corresponding coefficients.
+    pub fn sub(&self, other: &ConvPoly) -> ConvPoly {
+        assert!(
+            self.coeffs.len() == other.coeffs.len(),
+            "Polynomials should be part of the same ring"
+        ); // Sanity check
+
+        let n = self.coeffs.len();
+        ConvPoly {
+            coeffs: (0..n).map(|i| self.coeffs[i] - other.coeffs[i]).collect(),
+        }
+    }
+
+    /// Multiplies this polynomial by another using the convolution operation in the ring.
+    pub fn mul(&self, other: &ConvPoly) -> ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
@@ -111,27 +108,37 @@ impl ConvPoly {
         let n = self.coeffs.len();
         let mut result = ConvPoly { coeffs: vec![0; n] };
 
-        // Perform the convolution operation on self and other and store in result
         for i in 0..n {
             for j in 0..n {
                 result.coeffs[(i + j) % n] += self.coeffs[i] * other.coeffs[j];
             }
         }
 
-        // If `m` is provided, then ensure that each coefficient lies in Z/mZ (which is the range [0,m])
-        if let Some(m) = m {
-            for i in 0..n {
-                result.coeffs[i] = result.coeffs[i].rem_euclid(m);
-            }
-        }
-
         result
+    }
+
+    /// Adds another polynomial to this one by adding the corresponding coefficients. The addition
+    /// is performed modulo `m` in the ring (Z/mZ)\[x\]/(x^N - 1) instead of Z\[x\]/(x^N - 1)).
+    pub fn add_mod(&self, other: &ConvPoly, m: i32) -> ConvPoly {
+        self.add(other).modulo(m)
+    }
+
+    /// Subtracts another polynomial from this one by subtracting the corresponding coefficients. The
+    /// subtraction is performed modulo `m` in the ring (Z/mZ)\[x\]/(x^N - 1) instead of Z\[x\]/(x^N - 1)).
+    pub fn sub_mod(&self, other: &ConvPoly, m: i32) -> ConvPoly {
+        self.sub(other).modulo(m)
+    }
+
+    /// Multiplies this polynomial by another using the convolution operation in the ring. The multiplication
+    /// is performed modulo `m` in the ring (Z/mZ)\[x\]/(x^N - 1) instead of Z\[x\]/(x^N - 1)).
+    pub fn mul_mod(&self, other: &ConvPoly, m: i32) -> ConvPoly {
+        self.mul(other).modulo(m)
     }
 
     /// Divides the polynomial by another polynomial and returns the quotient and remainder. The division is
     /// treated as though it is happening within the polynomial ring (Z/mZ)\[x\]/(x^N-1). If `m` is not a unit in
     /// the ring (Z/mZ), then the division is not possible and an error is returned.
-    pub fn div(&self, divisor: &ConvPoly, m: i32) -> Result<(ConvPoly, ConvPoly), String> {
+    pub fn div_mod(&self, divisor: &ConvPoly, m: i32) -> Result<(ConvPoly, ConvPoly), String> {
         let n = self.coeffs.len();
 
         // Sanity checks
@@ -163,15 +170,53 @@ impl ConvPoly {
             };
 
             // Add the term to the quotient
-            quotient = quotient.add(&term, Some(m));
+            quotient = quotient.add_mod(&term, m);
             // Subtract the term * divisor from the dividend
-            remainder = remainder.sub(&divisor.clone().mul(&term, Some(m)), Some(m));
+            remainder = remainder.sub_mod(&divisor.clone().mul(&term), m);
         }
 
         Ok((quotient, remainder))
     }
 
-    // pub fn extended_gcd(&self, other: &ConvPoly, m: i32) -> (ConvPoly, ConvPoly, ConvPoly) {
+    /// The Extended Euclidean Algorithm for polynomials. Returns (gcd, s(x), t(x)) such that
+    /// a(x)s(x) + b(x)t(x) = gcd(a(x), b(x)) within the ring (Z/mZ)\[x\]/(x^N - 1).
+    // pub fn extended_gcd(a: &ConvPoly, b: &ConvPoly, m: i32) -> (ConvPoly, ConvPoly, ConvPoly) {
+    //     // Sanity checks
+    //     assert!(
+    //         a.coeffs.len() == b.coeffs.len(),
+    //         "Polynomials should be part of the same ring"
+    //     );
+    //     assert!(
+    //         !a.is_zero() || !b.is_zero(),
+    //         "At least one of the polynomials must be non-zero"
+    //     );
+    //     // Initial state
+    //     // a(x) = 1a(x) + 0b(x)  -->  old_r(x) = a(x)old_s(x) + b(x)old_t(x)  so old_r(x) is a linear combination of a(x),b(x)
+    //     // b(x) = 0a(x) + 1b(x)  -->  r(x) = a(x)s(x) + b(x)t(x)              so r(x) is also a linear combination of a(x),b(x)
+    //     //
+    //     // Update step
+    //     // Let old_r(x) = r(x)q(x) + new_r(x) (polynomial division algo). Then because of the above, new_r(x) = old_r(x) - r(x)q(x)
+    //     // is still a linear combination of a(x),b(x) with new_s(x) = old_s(x) - s(x)q(x) and new_t(x) = old_t(x) - t(x)q(x). By
+    //     // induction, we can continue assigning new_r(x) to r(x) like this until r(x) = 0 (which we know will happen by the standard
+    //     // Euclidean Algorithm) and be left with Bézout polynomial coefficients.
+    //     let n = a.coeffs.len();
+    //     let (mut old_r, mut old_s, mut old_t) = (
+    //         a.clone(),
+    //         ConvPoly::constant(1, n),
+    //         ConvPoly::constant(0, n),
+    //     );
+    //     let (mut r, mut s, mut t) = (
+    //         b.clone(),
+    //         ConvPoly::constant(0, n),
+    //         ConvPoly::constant(1, n),
+    //     );
+
+    //     while !r.is_zero() {
+    //         let (q, new_r) = old_r.div_mod(&r, m).unwrap();
+    //         (old_r, r) =
+    //     }
+
+    //     (old_r, old_s, old_t)
     // }
 
     // Computes the inverse of the given polynomial within the ring (Z/mZ)\[x\]/(x^N - 1) using the
