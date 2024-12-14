@@ -180,7 +180,7 @@ mod tests {
         let expected_sum = ConvPoly {
             coeffs: vec![4, 4, 4], // 4x^2 + 4x + 4
         };
-        let sum = poly1.add_mod(&poly2, 5);
+        let sum = poly1.add(&poly2).modulo(5);
         assert_eq!(expected_sum.coeffs, sum.coeffs, "Addition modulo 5 failed");
 
         // Modulo 5 addition with wraparound
@@ -193,7 +193,7 @@ mod tests {
         let expected_sum = ConvPoly {
             coeffs: vec![1, 2, 2], // 2x^2 + 2x + 1
         };
-        let sum = poly1.add_mod(&poly2, 5);
+        let sum = poly1.add(&poly2).modulo(5);
         assert_eq!(expected_sum.coeffs, sum.coeffs, "Addition modulo 5 failed");
     }
 
@@ -244,7 +244,7 @@ mod tests {
         let expected_diff = ConvPoly {
             coeffs: vec![2, 1, 0], // x + 2
         };
-        let diff = poly1.sub_mod(&poly2, 5);
+        let diff = poly1.sub(&poly2).modulo(5);
         assert_eq!(
             expected_diff.coeffs, diff.coeffs,
             "Subtraction modulo 5 failed"
@@ -260,7 +260,7 @@ mod tests {
         let expected_diff = ConvPoly {
             coeffs: vec![2, 2, 2], // 2x^2 + 2x + 2
         };
-        let diff = poly1.sub_mod(&poly2, 5);
+        let diff = poly1.sub(&poly2).modulo(5);
         assert_eq!(
             expected_diff.coeffs, diff.coeffs,
             "Subtraction modulo 5 failed"
@@ -342,7 +342,7 @@ mod tests {
         let expected_product = ConvPoly {
             coeffs: vec![9, 9, 4, 8, 5], // 5x^4 + 8x^3 + 4x^2 + 9x + 10
         };
-        let product = poly1.mul_mod(&poly2, 11);
+        let product = poly1.mul(&poly2).modulo(11);
         assert_eq!(
             expected_product.coeffs, product.coeffs,
             "Multiplication modulo 11 failed"

@@ -13,14 +13,17 @@ pub fn encrypt(msg: Vec<u8>, k_pub: ConvPoly) -> ConvPoly {
     let ser_msg = serialize(msg);
     // Computed as a perturbation T(d, d)
     let r_poly = ternary_polynomial(N, D, D);
-    // Compute the encoded message 
-    // e = r * h + m
-    let enc_msg = r_poly.mul(&k_pub, Some(Q)).add(&ser_msg, Some(Q));
+    // Compute the encoded message
+    // e(x) ≡ m(x) + r(x)*h(x)  (mod q)
+    let enc_msg = ser_msg.add(&r_poly.mul(&k_pub)).modulo(Q);
     enc_msg
 }
 
 pub fn decrypt(enc_msg: ConvPoly, k_priv: ConvPoly) -> ConvPoly {
-   let a = k_priv.mul(&enc_msg, Some(Q)); 
+    // a(x) ≡ e(x) * f(x) (mod q)
+    let a = enc_msg.mul(&k_priv).modulo(Q);
+    // NOTE: still need to Center-lift a(x)
+    todo!()
 }
 
 /// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients representing that message

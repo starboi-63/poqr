@@ -117,24 +117,6 @@ impl ConvPoly {
         result
     }
 
-    /// Adds another polynomial to this one by adding the corresponding coefficients. The addition
-    /// is performed modulo `m` in the ring (Z/mZ)\[x\]/(x^N - 1) instead of Z\[x\]/(x^N - 1)).
-    pub fn add_mod(&self, other: &ConvPoly, m: i32) -> ConvPoly {
-        self.add(other).modulo(m)
-    }
-
-    /// Subtracts another polynomial from this one by subtracting the corresponding coefficients. The
-    /// subtraction is performed modulo `m` in the ring (Z/mZ)\[x\]/(x^N - 1) instead of Z\[x\]/(x^N - 1)).
-    pub fn sub_mod(&self, other: &ConvPoly, m: i32) -> ConvPoly {
-        self.sub(other).modulo(m)
-    }
-
-    /// Multiplies this polynomial by another using the convolution operation in the ring. The multiplication
-    /// is performed modulo `m` in the ring (Z/mZ)\[x\]/(x^N - 1) instead of Z\[x\]/(x^N - 1)).
-    pub fn mul_mod(&self, other: &ConvPoly, m: i32) -> ConvPoly {
-        self.mul(other).modulo(m)
-    }
-
     /// Divides the polynomial by another polynomial and returns the quotient and remainder. The division is
     /// treated as though it is happening within the polynomial ring (Z/mZ)\[x\]/(x^N-1). If `m` is not a unit in
     /// the ring (Z/mZ), then the division is not possible and an error is returned.
@@ -170,9 +152,9 @@ impl ConvPoly {
             };
 
             // Add the term to the quotient
-            quotient = quotient.add_mod(&term, m);
+            quotient = quotient.add(&term).modulo(m);
             // Subtract the term * divisor from the dividend
-            remainder = remainder.sub_mod(&divisor.clone().mul(&term), m);
+            remainder = remainder.sub(&divisor.clone().mul(&term)).modulo(m);
         }
 
         Ok((quotient, remainder))
