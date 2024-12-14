@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use ntru::convolution_polynomial::{extended_gcd, gcd, inverse, ternary_polynomial, ConvPoly};
+    use ntru::convolution_polynomial::{
+        center_lift, extended_gcd, gcd, inverse, ternary_polynomial, ConvPoly,
+    };
     use rand::Rng;
 
     mod ternary_polynomial_tests {
@@ -329,6 +331,22 @@ mod tests {
             };
             let expected_product = ConvPoly {
                 coeffs: vec![-13, 20, -7, 19, 5], // 5x^4 + 19x^3 - 7x^2 + 20x - 13
+            };
+            let product = poly1.mul(&poly2);
+            assert_eq!(
+                expected_product.coeffs, product.coeffs,
+                "Multiplication failed"
+            );
+
+            // Example in the ring Z[x]/(x^5 - 1)
+            let poly1 = ConvPoly {
+                coeffs: vec![-2, 3, 1, 2, -3], // −3x^4 + 2x^3 + x^2 + 3x - 2
+            };
+            let poly2 = ConvPoly {
+                coeffs: vec![3, 0, -2, 1, 3], // 3x^4 + x^3 - 2x^2 + 3
+            };
+            let expected_product = ConvPoly {
+                coeffs: vec![0, 20, 10, -11, -14], // -14x^4 - 11x^3 + 10x^2 + 20x
             };
             let product = poly1.mul(&poly2);
             assert_eq!(
@@ -677,6 +695,53 @@ mod tests {
 
             // Should fail assert and panic when a is 0
             assert!(inverse(0, 7).is_err(), "Inverse should not exist for 0");
+        }
+
+        #[test]
+        fn test_center_lift() {
+            // Test cases with an odd modulus
+            assert_eq!(center_lift(-4, 7), 3, "Center lift failed");
+            assert_eq!(center_lift(-3, 7), -3, "Center lift failed");
+            assert_eq!(center_lift(-2, 7), -2, "Center lift failed");
+            assert_eq!(center_lift(-1, 7), -1, "Center lift failed");
+            assert_eq!(center_lift(0, 7), 0, "Center lift failed");
+            assert_eq!(center_lift(1, 7), 1, "Center lift failed");
+            assert_eq!(center_lift(2, 7), 2, "Center lift failed");
+            assert_eq!(center_lift(3, 7), 3, "Center lift failed");
+            assert_eq!(center_lift(4, 7), -3, "Center lift failed");
+            assert_eq!(center_lift(5, 7), -2, "Center lift failed");
+            assert_eq!(center_lift(6, 7), -1, "Center lift failed");
+            assert_eq!(center_lift(7, 7), 0, "Center lift failed");
+
+            // Test cases with an even modulus
+            assert_eq!(center_lift(-5, 8), 3, "Center lift failed");
+            assert_eq!(center_lift(-4, 8), 4, "Center lift failed");
+            assert_eq!(center_lift(-3, 8), -3, "Center lift failed");
+            assert_eq!(center_lift(-2, 8), -2, "Center lift failed");
+            assert_eq!(center_lift(-1, 8), -1, "Center lift failed");
+            assert_eq!(center_lift(0, 8), 0, "Center lift failed");
+            assert_eq!(center_lift(1, 8), 1, "Center lift failed");
+            assert_eq!(center_lift(2, 8), 2, "Center lift failed");
+            assert_eq!(center_lift(3, 8), 3, "Center lift failed");
+            assert_eq!(center_lift(4, 8), 4, "Center lift failed");
+            assert_eq!(center_lift(5, 8), -3, "Center lift failed");
+            assert_eq!(center_lift(6, 8), -2, "Center lift failed");
+            assert_eq!(center_lift(7, 8), -1, "Center lift failed");
+            assert_eq!(center_lift(8, 8), 0, "Center lift failed");
+
+            // Test random numbers
+            let mut rng = rand::thread_rng();
+            let num_tests = 1000;
+
+            for _ in 0..num_tests {
+                let a = rng.gen_range(-1000..=1000);
+                let m = rng.gen_range(1..=1000);
+                let result = center_lift(a, m);
+
+                assert_eq!(result.rem_euclid(m), a.rem_euclid(m), "Center lift failed");
+                assert!(result >= -m / 2, "Center lift failed");
+                assert!(result <= m / 2, "Center lift failed");
+            }
         }
     }
 }

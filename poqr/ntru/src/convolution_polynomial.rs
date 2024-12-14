@@ -1,12 +1,11 @@
 use rand::prelude::*;
-use std::fmt;
+use std::{fmt, ops::Rem};
 
 // TERNARY POLYNOMIALS
 
 /// Generates a random ternary convolution polynomial of degree less than `n` with `num_ones` 1s and `num_neg_ones`
 /// -1s. The remaining coefficients are 0. The polynomial can be viewed as an element of the ring Z\[x\]/(x^n - 1).
 pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> ConvPoly {
-    // Sanity checks
     assert!(
         num_ones + num_neg_ones <= n,
         "Number of 1s and -1s should be <= n (the number of terms in the polynomial)"
@@ -110,7 +109,7 @@ impl ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
-        ); // Sanity check
+        );
 
         let n = self.coeffs.len();
         ConvPoly {
@@ -123,7 +122,7 @@ impl ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
-        ); // Sanity check
+        );
 
         let n = self.coeffs.len();
         ConvPoly {
@@ -136,7 +135,7 @@ impl ConvPoly {
         assert!(
             self.coeffs.len() == other.coeffs.len(),
             "Polynomials should be part of the same ring"
-        ); // Sanity check
+        );
 
         let n = self.coeffs.len();
         let mut result = ConvPoly { coeffs: vec![0; n] };
@@ -156,7 +155,6 @@ impl ConvPoly {
     pub fn div_mod(&self, divisor: &ConvPoly, m: i32) -> Result<(ConvPoly, ConvPoly), String> {
         let n = self.coeffs.len();
 
-        // Sanity checks
         assert!(
             n == divisor.coeffs.len(),
             "Polynomials must be in the same ring"
@@ -193,7 +191,6 @@ impl ConvPoly {
     }
 
     pub fn gcd(a: &ConvPoly, b: &ConvPoly, m: i32) -> Result<ConvPoly, String> {
-        // Sanity checks
         assert!(
             a.coeffs.len() == b.coeffs.len(),
             "Polynomials should be part of the same ring"
@@ -232,7 +229,6 @@ impl ConvPoly {
         b: &ConvPoly,
         m: i32,
     ) -> Result<(ConvPoly, ConvPoly, ConvPoly), String> {
-        // Sanity checks
         assert!(
             a.coeffs.len() == b.coeffs.len(),
             "Polynomials should be part of the same ring"
@@ -281,8 +277,8 @@ impl ConvPoly {
         Ok((old_r, old_s, old_t))
     }
 
-    /// Computes the inverse of the given polynomial within the ring (Z/mZ)\[x\]/(x^N - 1)
-    /// using the Extended Euclidean Algorithm. Returns an error if the polynomial is not invertible.
+    /// Computes the inverse of this polynomial within the ring (Z/mZ)\[x\]/(x^N - 1) using
+    /// the Extended Euclidean Algorithm. Returns an error if the polynomial is not invertible.
     pub fn inverse(&self, m: i32) -> Result<ConvPoly, String> {
         if self.is_zero() {
             return Err("The inverse of the zero polynomial does not exist.".to_string());
@@ -316,6 +312,15 @@ impl ConvPoly {
         }
 
         Ok(s)
+    }
+
+    /// Lifts the polynomial out of the ring (Z/mZ)\[x\]/(x^N - 1) and into the ring Z\[x\]/(x^N - 1)
+    /// by center-lifting each coefficient from [0, m) --> (-m/2, m/2]. The result is a polynomial
+    /// with the property p(x) ≡ p(x).center_lift(m) (mod m).
+    pub fn center_lift(&self, m: i32) -> ConvPoly {
+        ConvPoly {
+            coeffs: self.coeffs.iter().map(|x| center_lift(*x, m)).collect(),
+        }
     }
 }
 
@@ -381,4 +386,17 @@ pub fn inverse(a: i32, m: i32) -> Result<i32, String> {
     }
 
     Ok(x.rem_euclid(m))
+}
+
+/// Lifts `a` out of the ring Z/mZ and into the ring Z by taking [0, m) --> (-m/2, m/2] with
+/// the property a ≡ center_lift(a, m) (mod m).
+pub fn center_lift(a: i32, m: i32) -> i32 {
+    assert!(m > 0, "Modulus `m` must be a positive integer");
+
+    let a = a.rem_euclid(m);
+    if a <= m / 2 {
+        a
+    } else {
+        a - m
+    }
 }
