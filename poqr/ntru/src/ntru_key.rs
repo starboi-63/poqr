@@ -27,7 +27,7 @@ pub struct NtruPrivateKey {
 impl NtruPrivateKey {
     fn new() -> NtruPrivateKey {
         let f: ConvPoly = {
-             
+            let f: ConvPoly = ternary_polynomial()
         } 
     }
 }
