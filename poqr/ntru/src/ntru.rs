@@ -2,25 +2,6 @@ use crate::convolution_polynomial::*;
 use crate::params::*;
 use std::collections::VecDeque;
 
-pub fn encrypt(msg: Vec<u8>, k_pub: ConvPoly) -> ConvPoly {
-    assert!(msg.len() * 5 <= N, "encrypt: message too long");
-    // ASCII message serialized as a balanced ternary polynomial
-    let ser_msg = serialize(msg);
-    // Computed as a perturbation T(d, d)
-    let r_poly = ternary_polynomial(N, D, D);
-    // Compute the encoded message
-    // e(x) ≡ m(x) + r(x)*h(x)  (mod q)
-    let enc_msg = ser_msg.add(&r_poly.mul(&k_pub)).modulo(Q);
-    enc_msg
-}
-
-pub fn decrypt(enc_msg: ConvPoly, k_priv: ConvPoly) -> ConvPoly {
-    // a(x) ≡ e(x) * f(x) (mod q)
-    let a = enc_msg.mul(&k_priv).modulo(Q);
-    // NOTE: still need to Center-lift a(x)
-    todo!()
-}
-
 /// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients representing that message
 pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
     assert!(
