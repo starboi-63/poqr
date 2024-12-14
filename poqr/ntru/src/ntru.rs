@@ -1,11 +1,6 @@
 use crate::convolution_polynomial::*;
+use crate::params::*;
 use std::collections::VecDeque;
-
-// NTRU Parameters, derived by Tanish and Alex
-const N: usize = 503;
-const P: usize = 3;
-const Q: i32 = 419;
-const D: usize = 23;
 
 pub fn encrypt(msg: Vec<u8>, k_pub: ConvPoly) -> ConvPoly {
     assert!(msg.len() * 5 <= N, "encrypt: message too long");

@@ -1,7 +1,0 @@
-[package]
-name = "network"
-edition = "2021"
-
-[dependencies]
-etherparse = "0.16"
-ipnet = "2"

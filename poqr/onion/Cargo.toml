@@ -5,5 +5,4 @@ edition = "2021"
 
 [dependencies]
 cursive = "0.21"
-network = { path = "../network" }
-
+ntru = { path = "../ntru" }
