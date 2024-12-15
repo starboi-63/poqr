@@ -20,7 +20,6 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
 /// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
 /// Max value is 242
 fn ternary(mut c: i32) -> Vec<i32> {
-    println!("running ternary on: {}", c);
     // Sanity checking
     assert!(
         c < 242 && c >= 0,
@@ -50,18 +49,19 @@ fn ternary(mut c: i32) -> Vec<i32> {
     while digits.len() < 5 {
         digits.push_front(0);
     }
-    println!("ternary of c: {:?}", digits);
     digits.into_iter().collect()
 }
 
 /// Deserializes a convolution polynomial into the message it represents as a vector
 /// of u8s
 pub fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
-    let coeffs = ser_msg.coeffs;
+    let coeffs = ser_msg.coeffs; 
     let mut ret: Vec<u8> = Vec::new();
     for chunk in coeffs.chunks(5) {
         match out_of_ternary(chunk) {
-            Some(c) => ret.push(c),
+            Some(c) => {
+                ret.push(c);
+            }
             None => (),
         }
     }
@@ -72,19 +72,25 @@ pub fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
 /// a decimal u8 (aka a char)
 /// Returns None if given a non valid char encoding
 fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
-    if ser_ch.len() != 5 {
-        return None;
-    } else if ser_ch == [0; 5] {
+    if ser_ch == [0; 5] {
         return None;
     }
+    let mut padded_ser_ch = Vec::from(ser_ch);
+    // Pad the array with zeros until it reaches length 5
+    while padded_ser_ch.len() < 5 {
+        padded_ser_ch.push(0);
+    }
+    // Truncate to 5 elements if it's longer
+    padded_ser_ch.truncate(5);
+
     let mut ans = 0;
     // We know every balanced ternary number will be 5 indices, so here's a fun little
     // constant time deserialization :)
-    ans += bal_tern_esc(ser_ch[4], 0);
-    ans += bal_tern_esc(ser_ch[3], 1);
-    ans += bal_tern_esc(ser_ch[2], 2);
-    ans += bal_tern_esc(ser_ch[1], 3);
-    ans += bal_tern_esc(ser_ch[0], 4);
+    ans += bal_tern_esc(padded_ser_ch[4], 0);
+    ans += bal_tern_esc(padded_ser_ch[3], 1);
+    ans += bal_tern_esc(padded_ser_ch[2], 2);
+    ans += bal_tern_esc(padded_ser_ch[1], 3);
+    ans += bal_tern_esc(padded_ser_ch[0], 4);
     // If value is for some reason not a u8, returns None
     match u8::try_from(ans) {
         Ok(a) => Some(a),
