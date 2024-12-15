@@ -24,6 +24,7 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
 /// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
 /// Max value is 242
 fn ternary(mut c: i32) -> Vec<i32> {
+    println!("running ternary on: {}", c);
     // Sanity checking
     assert!(
         c < 242 && c >= 0,
@@ -53,6 +54,7 @@ fn ternary(mut c: i32) -> Vec<i32> {
     while digits.len() < 5 {
         digits.push_front(0);
     }
+    println!("ternary of c: {:?}", digits);
     digits.into_iter().collect()
 }
 
@@ -75,6 +77,8 @@ pub fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
 /// Returns None if given a non valid char encoding
 fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     if ser_ch.len() != 5 {
+        return None;
+    } else if ser_ch == [0 ; 5] {
         return None;
     }
     let mut ans = 0;
