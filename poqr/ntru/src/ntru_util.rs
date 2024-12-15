@@ -75,22 +75,23 @@ fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     if ser_ch == [0; 5] {
         return None;
     }
-    let mut padded_ser_ch = Vec::from(ser_ch);
-    // Pad the array with zeros until it reaches length 5
-    while padded_ser_ch.len() < 5 {
-        padded_ser_ch.push(0);
+    let mut ser_ch = Vec::from(ser_ch);
+    if ser_ch.len() % 5 != 0 || ser_ch.len() > 5 {
+        // Pad the array with zeros until it reaches length 5
+        while ser_ch.len() < 5 {
+            ser_ch.push(0);
+        }
+        // Truncate to 5 elements if it's longer
+        ser_ch.truncate(5);
     }
-    // Truncate to 5 elements if it's longer
-    padded_ser_ch.truncate(5);
-
     let mut ans = 0;
     // We know every balanced ternary number will be 5 indices, so here's a fun little
     // constant time deserialization :)
-    ans += bal_tern_esc(padded_ser_ch[4], 0);
-    ans += bal_tern_esc(padded_ser_ch[3], 1);
-    ans += bal_tern_esc(padded_ser_ch[2], 2);
-    ans += bal_tern_esc(padded_ser_ch[1], 3);
-    ans += bal_tern_esc(padded_ser_ch[0], 4);
+    ans += bal_tern_esc(ser_ch[4], 0);
+    ans += bal_tern_esc(ser_ch[3], 1);
+    ans += bal_tern_esc(ser_ch[2], 2);
+    ans += bal_tern_esc(ser_ch[1], 3);
+    ans += bal_tern_esc(ser_ch[0], 4);
     // If value is for some reason not a u8, returns None
     match u8::try_from(ans) {
         Ok(a) => Some(a),
