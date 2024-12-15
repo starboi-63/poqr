@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod ntru_tests {
+mod ntru_util_tests {
     use ntru::ntru_util::{deserialize, serialize};
 
     #[test]

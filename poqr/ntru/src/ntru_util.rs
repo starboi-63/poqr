@@ -8,13 +8,16 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
         plain_msg.len() * 5 <= N,
         "serialize: Message cannot exceed N - 1 in length"
     );
-    let digit_vec = {
-        let mut temp: Vec<i32> = Vec::new();
-        for c in plain_msg {
-            temp.extend(ternary(c.into()));
-        }
-        temp
-    };
+    // Convert the message to a vector of ternary digits
+    let mut digit_vec = Vec::new();
+    for c in plain_msg {
+        digit_vec.extend(ternary(c.into()));
+    }
+    // Pad with zeros to make sure the message is a polynomial with N coefficients
+    while digit_vec.len() < N {
+        digit_vec.push(0);
+    }
+
     ConvPoly { coeffs: digit_vec }
 }
 
