@@ -113,49 +113,50 @@ impl ConvPoly {
         }
     }
 
-    /// Adds another polynomial to this one by adding the corresponding coefficients.
     pub fn add(&self, other: &ConvPoly) -> ConvPoly {
-        assert!(
-            self.coeffs.len() == other.coeffs.len(),
-            "Polynomials should be part of the same ring"
-        );
+        let max_len = self.coeffs.len().max(other.coeffs.len());
+        let mut result = Vec::with_capacity(max_len);
 
-        let n = self.coeffs.len();
-        ConvPoly {
-            coeffs: (0..n).map(|i| self.coeffs[i] + other.coeffs[i]).collect(),
+        for i in 0..max_len {
+            let a = self.coeffs.get(i).copied().unwrap_or(0);
+            let b = other.coeffs.get(i).copied().unwrap_or(0);
+            result.push(a + b);
         }
+
+        let poly = ConvPoly { coeffs: result };
+        poly
     }
 
     /// Subtracts another polynomial from this one by subtracting the corresponding coefficients.
     pub fn sub(&self, other: &ConvPoly) -> ConvPoly {
-        assert!(
-            self.coeffs.len() == other.coeffs.len(),
-            "Polynomials should be part of the same ring"
-        );
+        let max_len = self.coeffs.len().max(other.coeffs.len());
+        let mut result = Vec::with_capacity(max_len);
 
-        let n = self.coeffs.len();
-        ConvPoly {
-            coeffs: (0..n).map(|i| self.coeffs[i] - other.coeffs[i]).collect(),
+        for i in 0..max_len {
+            let a = self.coeffs.get(i).copied().unwrap_or(0);
+            let b = other.coeffs.get(i).copied().unwrap_or(0);
+            result.push(a - b);
         }
+
+        let poly = ConvPoly { coeffs: result };
+        poly
     }
 
-    /// Multiplies this polynomial by another using the convolution operation in the ring.
     pub fn mul(&self, other: &ConvPoly) -> ConvPoly {
-        assert!(
-            self.coeffs.len() == other.coeffs.len(),
-            "Polynomials should be part of the same ring"
-        );
+        if self.is_zero() || other.is_zero() {
+            return ConvPoly { coeffs: vec![0] };
+        }
 
-        let n = self.coeffs.len();
-        let mut result = ConvPoly { coeffs: vec![0; n] };
+        let mut result = vec![0; self.coeffs.len() + other.coeffs.len() - 1];
 
-        for i in 0..n {
-            for j in 0..n {
-                result.coeffs[(i + j) % n] += self.coeffs[i] * other.coeffs[j];
+        for (i, &a) in self.coeffs.iter().enumerate() {
+            for (j, &b) in other.coeffs.iter().enumerate() {
+                result[i + j] += a * b;
             }
         }
 
-        result
+        let poly = ConvPoly { coeffs: result };
+        poly
     }
 
     /// Divides the polynomial by another polynomial and returns the quotient and remainder. The division is
@@ -321,6 +322,12 @@ impl ConvPoly {
         }
 
         Ok(s)
+    }
+
+    fn resize_to(&self, len: usize) -> ConvPoly {
+        let mut new_coeffs = self.coeffs.clone();
+        new_coeffs.resize(len, 0);
+        ConvPoly { coeffs: new_coeffs }
     }
 }
 

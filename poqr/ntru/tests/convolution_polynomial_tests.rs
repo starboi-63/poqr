@@ -233,6 +233,18 @@ mod tests {
             };
             let sum = poly1.add(&poly2).modulo(5);
             assert_eq!(expected_sum.coeffs, sum.coeffs, "Addition modulo 5 failed");
+
+            let poly1 = ConvPoly {
+                coeffs: vec![4, 3, 2],
+            };
+            let poly2 = ConvPoly {
+                coeffs: vec!(1, 2),
+            };
+            let expected_sum = ConvPoly {
+                coeffs: vec![0, 0, 2]
+            };
+            let sum = poly1.add(&poly2).modulo(5);
+            assert_eq!(expected_sum.coeffs, sum.coeffs, "Partial add modulo 5 failed"); 
         }
 
         #[test]
