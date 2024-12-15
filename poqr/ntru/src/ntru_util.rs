@@ -1,6 +1,5 @@
 use crate::convolution_polynomial::*;
 use crate::params::*;
-use std::collections::VecDeque;
 
 /// Takes in a plain message encoded in ASCII and returns a convolution polynomial with coefficients representing that message
 pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
@@ -11,7 +10,8 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
     // Convert the message to a vector of ternary digits
     let mut digit_vec = Vec::with_capacity(plain_msg.len() * 5);
     for c in plain_msg {
-        digit_vec.extend_from_slice(&ternary(c.into()));
+        let arr = ternary(c.into());
+        digit_vec.extend_from_slice(&arr);
     }
 
     ConvPoly { coeffs: digit_vec }
@@ -19,37 +19,22 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
 
 /// Converts a 32 bit integer to a balanced ternary representation in the form of a 5-integer array
 /// Max value is 242
-fn ternary(mut c: i32) -> Vec<i32> {
-    // Sanity checking
-    assert!(
-        c < 242 && c >= 0,
-        "5-index ternary can encode at max a positive value less than 242"
-    );
-    // Base case
+fn ternary(mut c: i32) -> [i32; 5] {
+    assert!(c < 242 && c >= 0);
     if c == 0 {
-        return vec![0, 0, 0, 0, 0];
+        return [0; 5];
     }
-    let mut digits: VecDeque<i32> = VecDeque::new();
-    // Ternary conversion ; due to sanity checks should not exceed 5 digits
-    while c > 0 {
-        let rem: i32 = {
-            let rem_temp = c % 3;
-            c /= 3;
-            if rem_temp == 2 {
-                -1
-            } else {
-                rem_temp
-            }
-        };
-        digits.push_front(rem);
+
+    let mut digits = [0; 5];
+    for i in (0..5).rev() {
+        if c == 0 {
+            break;
+        }
+        let rem_temp = c % 3;
+        c /= 3;
+        digits[i] = if rem_temp == 2 { -1 } else { rem_temp };
     }
-    // NOTE : Make this nicer
-    //
-    // Pad with zeros on less than 5 digit cases
-    while digits.len() < 5 {
-        digits.push_front(0);
-    }
-    digits.into_iter().collect()
+    digits
 }
 
 /// Deserializes a convolution polynomial into the message it represents as a vector

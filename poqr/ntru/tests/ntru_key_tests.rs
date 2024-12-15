@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod ntru_key_tests {
     use std::time::Instant;
-
+    use rand::Rng;
     use ntru::ntru_key::NtruKeyPair;
 
     #[test]
@@ -18,16 +18,16 @@ mod ntru_key_tests {
         // Test empty message
 
         // Test random messages
-        // let num_tests = 1;
-        // let mut rng = rand::thread_rng();
+        let num_tests = 1;
+        let mut rng = rand::thread_rng();
 
-        // for _ in 0..num_tests {
-        //     let msg_len = rng.gen_range(0..=90);
-        //     let keypair = NtruKeyPair::new();
-        //     let msg: Vec<u8> = (0..=msg_len).map(|_| rng.gen_range(1..=127)).collect();
-        //     let enc_msg = keypair.encrypt(msg.clone());
-        //     let dec_msg = keypair.decrypt(enc_msg);
-        //     assert_eq!(msg, dec_msg);
-        // }
+        for _ in 0..num_tests {
+            let msg_len = rng.gen_range(0..=90);
+            let keypair = NtruKeyPair::new();
+            let msg: Vec<u8> = (0..=msg_len).map(|_| rng.gen_range(1..=127)).collect();
+            let enc_msg = keypair.encrypt(msg.clone());
+            let dec_msg = keypair.decrypt(enc_msg);
+            assert_eq!(msg, dec_msg);
+        }
     }
 }
