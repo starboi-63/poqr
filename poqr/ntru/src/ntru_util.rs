@@ -9,9 +9,9 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
         "serialize: Message cannot exceed N - 1 in length"
     );
     // Convert the message to a vector of ternary digits
-    let mut digit_vec = Vec::new();
+    let mut digit_vec = Vec::with_capacity(plain_msg.len() * 5);
     for c in plain_msg {
-        digit_vec.extend(ternary(c.into()));
+        digit_vec.extend_from_slice(&ternary(c.into()));
     }
 
     ConvPoly { coeffs: digit_vec }
@@ -55,10 +55,12 @@ fn ternary(mut c: i32) -> Vec<i32> {
 /// Deserializes a convolution polynomial into the message it represents as a vector
 /// of u8s
 pub fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
-    let coeffs = ser_msg.coeffs; 
+    let coeffs = ser_msg.coeffs;
     let mut ret: Vec<u8> = Vec::new();
     for chunk in coeffs.chunks(5) {
-        match out_of_ternary(chunk) {
+        let mut padded = [0; 5];
+        padded[..chunk.len()].copy_from_slice(chunk);
+        match out_of_ternary(&padded) {
             Some(c) => {
                 ret.push(c);
             }
@@ -75,23 +77,17 @@ fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     if ser_ch == [0; 5] {
         return None;
     }
-    let mut ser_ch = Vec::from(ser_ch);
-    if ser_ch.len() % 5 != 0 || ser_ch.len() > 5 {
-        // Pad the array with zeros until it reaches length 5
-        while ser_ch.len() < 5 {
-            ser_ch.push(0);
-        }
-        // Truncate to 5 elements if it's longer
-        ser_ch.truncate(5);
-    }
+
+    const POWERS: [i32; 5] = [1, 3, 9, 27, 81];
+
     let mut ans = 0;
     // We know every balanced ternary number will be 5 indices, so here's a fun little
     // constant time deserialization :)
-    ans += bal_tern_esc(ser_ch[4], 0);
-    ans += bal_tern_esc(ser_ch[3], 1);
-    ans += bal_tern_esc(ser_ch[2], 2);
-    ans += bal_tern_esc(ser_ch[1], 3);
-    ans += bal_tern_esc(ser_ch[0], 4);
+    ans += bal_tern_esc(ser_ch[4], POWERS[0]);
+    ans += bal_tern_esc(ser_ch[3], POWERS[1]);
+    ans += bal_tern_esc(ser_ch[2], POWERS[2]);
+    ans += bal_tern_esc(ser_ch[1], POWERS[3]);
+    ans += bal_tern_esc(ser_ch[0], POWERS[4]);
     // If value is for some reason not a u8, returns None
     match u8::try_from(ans) {
         Ok(a) => Some(a),
@@ -107,10 +103,10 @@ fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
 /// Takes a value from an array representing a balanced ternary number
 /// and converts it to a decimal component of the decimal conversion,
 /// dependent on its position in the array and index value.
-fn bal_tern_esc(n: i32, i: u32) -> i32 {
+fn bal_tern_esc(n: i32, exp: i32) -> i32 {
     if n == -1 {
-        2 * 3_i32.pow(i)
+        2 * exp
     } else {
-        n * 3_i32.pow(i)
+        n * exp
     }
 }
