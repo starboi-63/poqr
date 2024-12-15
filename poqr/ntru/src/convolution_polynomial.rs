@@ -28,8 +28,7 @@ pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> Con
         poly.coeffs[rand_indices[i]] = -1;
     }
 
-    poly.trim();
-    poly
+    poly.trim()
 }
 
 // CONVOLUTION POLYNOMIALS
@@ -74,11 +73,6 @@ impl fmt::Display for ConvPoly {
 }
 
 impl ConvPoly {
-    /// Removes trailing zero coefficients from the polynomial. The polynomial is modified in-place.
-    pub fn trim(&mut self) {
-        self.coeffs.truncate(self.deg() + 1);
-    }
-
     /// Constructs a constant polynomial f(x) = c in the ring Z\[x\]/(x^N - 1).
     pub fn constant(c: i32) -> ConvPoly {
         ConvPoly { coeffs: vec![c] }
@@ -99,29 +93,34 @@ impl ConvPoly {
         self.coeffs[self.deg()]
     }
 
+    /// Removes trailing zero coefficients from the polynomial.
+    pub fn trim(&self) -> ConvPoly {
+        let mut coeffs = self.coeffs.clone();
+        coeffs.truncate(self.deg() + 1);
+        ConvPoly { coeffs }
+    }
+
     /// Applies the modulus operation to each coefficient of the polynomial and returns the result,
     /// which lies in the ring (Z/mZ)\[x\]/(x^N - 1). The modulus `m` must be a positive integer.
     pub fn modulo(&self, m: i32) -> ConvPoly {
         assert!(m > 0, "Modulus `m` must be a positive integer");
 
-        let mut result = ConvPoly {
+        let result = ConvPoly {
             coeffs: self.coeffs.iter().map(|x| x.rem_euclid(m)).collect(),
         };
 
-        result.trim();
-        result
+        result.trim()
     }
 
     /// Lifts the polynomial out of the ring (Z/mZ)\[x\]/(x^N - 1) and into the ring Z\[x\]/(x^N - 1)
     /// by center-lifting each coefficient from \[0, m) --> (-m/2, m/2\]. The result is a polynomial
     /// with the property p(x) ≡ p(x).center_lift(m) (mod m).
     pub fn center_lift(&self, m: i32) -> ConvPoly {
-        let mut result = ConvPoly {
+        let result = ConvPoly {
             coeffs: self.coeffs.iter().map(|x| center_lift(*x, m)).collect(),
         };
 
-        result.trim();
-        result
+        result.trim()
     }
 
     /// Adds another polynomial to this one by adding the corresponding coefficients.
@@ -137,8 +136,7 @@ impl ConvPoly {
             result.coeffs.push(a + b);
         }
 
-        result.trim();
-        result
+        result.trim()
     }
 
     /// Subtracts another polynomial from this one by subtracting the corresponding coefficients.
@@ -154,8 +152,7 @@ impl ConvPoly {
             result.coeffs.push(a - b);
         }
 
-        result.trim();
-        result
+        result.trim()
     }
 
     /// Returns the product of this polynomial with another polynomial in the ring Z\[x\]/(x^n - 1).
@@ -171,8 +168,7 @@ impl ConvPoly {
             }
         }
 
-        result.trim();
-        result
+        result.trim()
     }
 
     /// Divides the polynomial by another polynomial and returns the quotient and remainder. The division is
@@ -189,10 +185,9 @@ impl ConvPoly {
             "Division by zero polynomial not permitted"
         );
 
-        let mut remainder = self.clone();
-        let mut quotient = ConvPoly {
-            coeffs: Vec::with_capacity(n),
-        };
+        // Initialize the dividend and quotient; multiplication ensures exponents are considered mod n
+        let mut remainder = self.clone().mul(&ConvPoly::constant(1), n);
+        let mut quotient = ConvPoly::constant(0);
 
         // Check whether the given divisor is valid by attempting to compute the multiplicative inverse of its leading coefficient
         let inverse_divisor_lc = if let Ok(inverse) = inverse(divisor.lc(), m) {

@@ -46,10 +46,56 @@ mod tests {
         use super::*;
 
         #[test]
+        fn test_convolution_polynomial_trim() {
+            // Trim all zeros
+            let poly = ConvPoly {
+                coeffs: vec![0, 0, 0, 0, 0],
+            };
+            let expected_trimmed = ConvPoly::constant(0);
+            let trimmed = poly.trim();
+            assert_eq!(
+                expected_trimmed.coeffs, trimmed.coeffs,
+                "Trim all zeros failed"
+            );
+
+            // Trim some zeros
+            let poly = ConvPoly {
+                coeffs: vec![0, 0, 0, 1, 0, 0],
+            };
+            let expected_trimmed = ConvPoly {
+                coeffs: vec![0, 0, 0, 1],
+            };
+            let trimmed = poly.trim();
+            assert_eq!(
+                expected_trimmed.coeffs, trimmed.coeffs,
+                "Trim some zeros failed"
+            );
+
+            // Trim no zeros
+            let poly = ConvPoly {
+                coeffs: vec![0, 0, 3, 4, 5],
+            };
+            let expected_trimmed = ConvPoly {
+                coeffs: vec![0, 0, 3, 4, 5],
+            };
+            let trimmed = poly.trim();
+            assert_eq!(
+                expected_trimmed.coeffs, trimmed.coeffs,
+                "Trim no zeros failed"
+            );
+        }
+
+        #[test]
         fn test_constant_convolution_polynomial() {
+            // Zero polynomial
+            let poly = ConvPoly::constant(0);
+            assert_eq!(poly.coeffs, vec![0], "Constant polynomial failed");
+
+            // Positive constant polynomial
             let poly = ConvPoly::constant(5);
             assert_eq!(poly.coeffs, vec![5], "Constant polynomial failed");
 
+            // Negative constant polynomial
             let poly = ConvPoly::constant(-5);
             assert_eq!(poly.coeffs, vec![-5], "Constant polynomial failed");
         }
@@ -153,6 +199,14 @@ mod tests {
             let expected_result = ConvPoly {
                 coeffs: vec![1, 3, 3, 1], // x^3 + 3x^2 + 3x + 1
             };
+            let result = poly.modulo(5);
+            assert_eq!(expected_result.coeffs, result.coeffs, "Modulo 5 failed");
+
+            // Modulo 5 with the result being zero
+            let poly = ConvPoly {
+                coeffs: vec![-5, 10, 15, 20, 1000], // 1000x^4 + 20x^3 + 15x^2 + 10x - 5
+            };
+            let expected_result = ConvPoly::constant(0);
             let result = poly.modulo(5);
             assert_eq!(expected_result.coeffs, result.coeffs, "Modulo 5 failed");
 
@@ -269,6 +323,7 @@ mod tests {
             let sum = poly1.add(&poly2).modulo(5);
             assert_eq!(expected_sum.coeffs, sum.coeffs, "Addition modulo 5 failed");
 
+            // Another modulo 5 addition with wraparound
             let poly1 = ConvPoly {
                 coeffs: vec![4, 3, 2],
             };
@@ -475,7 +530,7 @@ mod tests {
 
         #[test]
         fn test_convolution_polynomial_div_mod() {
-            // Division by self
+            // Division by self should return 1
             let poly1 = ConvPoly {
                 coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
             };
@@ -494,7 +549,7 @@ mod tests {
                 "Division remainder failed (divisor is self)"
             );
 
-            // Division by 1
+            // Division by 1 should return self
             let poly1 = ConvPoly {
                 coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
             };
@@ -548,6 +603,26 @@ mod tests {
             };
             let expected_remainder = ConvPoly::constant(1);
             let (quotient, remainder) = poly1.div_mod(&poly2, 2, 6).unwrap();
+            assert_eq!(
+                expected_quotient.coeffs, quotient.coeffs,
+                "Division quotient failed"
+            );
+            assert_eq!(
+                expected_remainder.coeffs, remainder.coeffs,
+                "Division remainder failed"
+            );
+
+            // Division of a polynomial that is zero in the ring (Z/2Z)[x]/(x^5 - 1)
+            // 0 divided by anything non-zero should return (0, 0)
+            let poly1 = ConvPoly {
+                coeffs: vec![-1, 0, 0, 0, 0, 1], // x^5 - 1 (this is 0 in the ring)
+            };
+            let poly2 = ConvPoly {
+                coeffs: vec![1, 1, 0, 0, 1], // x^4 + x + 1
+            };
+            let expected_quotient = ConvPoly::constant(0);
+            let expected_remainder = ConvPoly::constant(0);
+            let (quotient, remainder) = poly1.div_mod(&poly2, 2, 5).unwrap();
             assert_eq!(
                 expected_quotient.coeffs, quotient.coeffs,
                 "Division quotient failed"
