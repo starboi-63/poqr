@@ -317,13 +317,6 @@ impl ConvPoly {
 
         Ok(s)
     }
-
-    /// Resizes the polynomial to the given length by appending zeros to the end.
-    fn resize_to(&self, len: usize) -> ConvPoly {
-        let mut new_coeffs = self.coeffs.clone();
-        new_coeffs.resize(len, 0);
-        ConvPoly { coeffs: new_coeffs }
-    }
 }
 
 // INTEGER ARITHMETIC
