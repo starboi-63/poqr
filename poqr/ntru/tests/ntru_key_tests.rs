@@ -21,14 +21,14 @@ mod ntru_key_tests {
         let dec_msg = keypair.decrypt(enc_msg);
         assert_eq!(msg, dec_msg, "Empty message failed");
 
-        // Test random messages
-        let num_tests = 1;
+        // Test random messages with new key pairs
+        let num_tests = 100;
         let mut rng = rand::thread_rng();
 
         for _ in 0..num_tests {
-            let msg_len = rng.gen_range(0..=100);
-            let keypair = NtruKeyPair::new();
+            let msg_len = rng.gen_range(0..100);
             let msg: Vec<u8> = (0..=msg_len).map(|_| rng.gen_range(1..=127)).collect();
+            let keypair = NtruKeyPair::new();
             let enc_msg = keypair.encrypt(msg.clone());
             let dec_msg = keypair.decrypt(enc_msg);
             assert_eq!(msg, dec_msg, "Random message failed");
