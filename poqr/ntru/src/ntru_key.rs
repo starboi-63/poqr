@@ -38,7 +38,7 @@ impl NtruKeyPair {
         // a(x) ≡ e(x) * f(x) (mod q)
         let a = enc_msg.mul(&self.private_key.f).center_lift(Q);
         // m(x) ≡ a(x) * Fp(x) (mod p)
-        let msg_poly = a.mul(&self.private_key.f.inverse(P).unwrap()).modulo(P);
+        let msg_poly = a.mul(&self.private_key.f_p).modulo(P);
         let msg = deserialize(msg_poly);
         msg
     }
@@ -52,7 +52,7 @@ impl NtruPublicKey {
     /// Generates a public key given a corresponding private key
     fn new(k_priv: &NtruPrivateKey) -> NtruPublicKey {
         // Generate f inverse over Q
-        let f_inv = k_priv.f.inverse(Q).unwrap();
+        let f_inv = &k_priv.f_q;
         // Public key generated as f inverse Q * g
         let h = f_inv.mul(&k_priv.g);
         NtruPublicKey { h }
@@ -62,27 +62,24 @@ impl NtruPublicKey {
 /// A private key used in the NTRU encryption scheme
 struct NtruPrivateKey {
     f: ConvPoly,
+    f_p: ConvPoly,
+    f_q: ConvPoly,
     g: ConvPoly,
 }
 impl NtruPrivateKey {
     /// Generates a new random NTRU private key
     fn new() -> NtruPrivateKey {
-        // Generate f, one component of the NTRU private key
-        let f: ConvPoly = {
-            // Generate f over T(d + 1, d)
-            let mut f: ConvPoly = ternary_polynomial(N, D + 1, D);
-            loop {
-                // f must be invertible on q and p, otherwise regenerate
-                if f.inverse(Q).is_ok() && f.inverse(P).is_ok() {
-                    break;
-                }
-                // Retry
-                f = ternary_polynomial(N, D + 1, D)
+        loop {
+            let f = ternary_polynomial(N, D + 1, D);
+            let f_q = f.inverse(Q);
+            let f_p = f.inverse(P);
+            match (f_p, f_q) {
+                (Ok(f_p), Ok(f_q)) => {
+                    let g = ternary_polynomial(N, D, D);
+                    return NtruPrivateKey {f, f_p, f_q, g}
+                } 
+                _ => continue
             }
-            f
-        };
-        // G doesn't have same restrictions, generated over T(d, d)
-        let g: ConvPoly = ternary_polynomial(N, D, D);
-        NtruPrivateKey { f, g }
+        }
     }
 }
