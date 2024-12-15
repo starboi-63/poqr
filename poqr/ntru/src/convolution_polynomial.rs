@@ -142,6 +142,7 @@ impl ConvPoly {
         poly
     }
 
+    //NOTE: Could use FFT for polynomial multiplication if we want to maybe
     pub fn mul(&self, other: &ConvPoly) -> ConvPoly {
         if self.is_zero() || other.is_zero() {
             return ConvPoly { coeffs: vec![0] };
