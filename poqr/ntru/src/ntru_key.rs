@@ -28,17 +28,19 @@ impl NtruKeyPair {
         // Compute r(x) as a random perturbation in T(d, d)
         let rand = ternary_polynomial(N, D, D);
         // Compute the encrypted message e(x) ≡ m(x) + p*r(x)*h(x)  (mod q)
-        let p = ConvPoly::constant(P, N);
-        let enc_msg = ser_msg.add(&p.mul(&rand.mul(&self.public_key.h))).modulo(Q);
+        let p = ConvPoly::constant(P);
+        let enc_msg = ser_msg
+            .add(&p.mul(&rand.mul(&self.public_key.h, N), N))
+            .modulo(Q);
         enc_msg
     }
 
     /// Decrypts a message using the NTRU encryption scheme
     pub fn decrypt(&self, enc_msg: ConvPoly) -> Vec<u8> {
         // a(x) ≡ e(x) * f(x) (mod q)
-        let a = enc_msg.mul(&self.private_key.f).center_lift(Q);
+        let a = enc_msg.mul(&self.private_key.f, N).center_lift(Q);
         // m(x) ≡ a(x) * Fp(x) (mod p)
-        let msg_poly = a.mul(&self.private_key.f_p).modulo(P);
+        let msg_poly = a.mul(&self.private_key.f_p, N).modulo(P);
         let msg = deserialize(msg_poly);
         msg
     }
@@ -54,16 +56,20 @@ impl NtruPublicKey {
         // Generate f inverse over Q
         let f_inv = &k_priv.f_q;
         // Public key generated as f inverse Q * g
-        let h = f_inv.mul(&k_priv.g);
+        let h = f_inv.mul(&k_priv.g, N);
         NtruPublicKey { h }
     }
 }
 
 /// A private key used in the NTRU encryption scheme
 struct NtruPrivateKey {
+    /// A random polynomial generated over T(D+1, D)
     f: ConvPoly,
+    /// The inverse of f(x) modulo P within the ring (Z/PZ)\[x\]/(x^N - 1)
     f_p: ConvPoly,
+    /// The inverse of f(x) modulo Q within the ring (Z/QZ)\[x\]/(x^N - 1)
     f_q: ConvPoly,
+    /// A random polynomial generated over T(D, D)
     g: ConvPoly,
 }
 impl NtruPrivateKey {
@@ -71,14 +77,14 @@ impl NtruPrivateKey {
     fn new() -> NtruPrivateKey {
         loop {
             let f = ternary_polynomial(N, D + 1, D);
-            let f_q = f.inverse(Q);
-            let f_p = f.inverse(P);
+            let f_q = f.inverse(Q, N);
+            let f_p = f.inverse(P, N);
             match (f_p, f_q) {
                 (Ok(f_p), Ok(f_q)) => {
                     let g = ternary_polynomial(N, D, D);
-                    return NtruPrivateKey {f, f_p, f_q, g}
-                } 
-                _ => continue
+                    return NtruPrivateKey { f, f_p, f_q, g };
+                }
+                _ => continue,
             }
         }
     }

@@ -1,11 +1,18 @@
-use ntru::ntru_key::NtruKeyPair;
+use ntru::convolution_polynomial::ConvPoly;
 
 fn main() {
-    let keypair = NtruKeyPair::new();
-    let msg = "minky".as_bytes().to_vec();
-    let enc_msg = keypair.encrypt(msg.clone());
-    let dec_msg = keypair.decrypt(enc_msg);
-    assert_eq!(msg, dec_msg);
+    // Example in the ring (Z/2Z)[x]/(x^5 - 1)
+    let poly = ConvPoly {
+        coeffs: vec![1, 1, 0, 0, 1], // x^4 + x + 1
+    };
+    let expected_inverse = ConvPoly {
+        coeffs: vec![1, 0, 1, 1], // x^3 + x^2 + 1
+    };
+    let inverse = poly.inverse(2, 5).unwrap();
+    assert_eq!(
+        expected_inverse.coeffs, inverse.coeffs,
+        "Inverse modulo 2 failed"
+    );
 
     println!("Done!");
 }

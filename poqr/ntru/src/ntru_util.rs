@@ -13,10 +13,6 @@ pub fn serialize(plain_msg: Vec<u8>) -> ConvPoly {
     for c in plain_msg {
         digit_vec.extend(ternary(c.into()));
     }
-    // Pad with zeros to make sure the message is a polynomial with N coefficients
-    while digit_vec.len() < N {
-        digit_vec.push(0);
-    }
 
     ConvPoly { coeffs: digit_vec }
 }
@@ -48,7 +44,7 @@ fn ternary(mut c: i32) -> Vec<i32> {
         };
         digits.push_front(rem);
     }
-    //NOTE : Make this nicer
+    // NOTE : Make this nicer
     //
     // Pad with zeros on less than 5 digit cases
     while digits.len() < 5 {
@@ -78,7 +74,7 @@ pub fn deserialize(ser_msg: ConvPoly) -> Vec<u8> {
 fn out_of_ternary(ser_ch: &[i32]) -> Option<u8> {
     if ser_ch.len() != 5 {
         return None;
-    } else if ser_ch == [0 ; 5] {
+    } else if ser_ch == [0; 5] {
         return None;
     }
     let mut ans = 0;
