@@ -33,7 +33,7 @@ pub fn ternary_polynomial(n: usize, num_ones: usize, num_neg_ones: usize) -> Con
 // CONVOLUTION POLYNOMIALS
 
 /// A polynomial in the ring of convolution polynomials Z\[x\]/(x^N - 1). Here, N is the modulus of the polynomial
-/// degree, and equals the length of the `coeffs` vector.
+/// degree, and is defined in the `params` module
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConvPoly {
     pub coeffs: Vec<i32>, // Coefficients of the polynomial such that coeffs[i] is the coefficient of x^i
@@ -73,10 +73,8 @@ impl fmt::Display for ConvPoly {
 
 impl ConvPoly {
     /// Constructs a constant polynomial f(x) = c in the ring Z\[x\]/(x^n - 1).
-    pub fn constant(c: i32, n: usize) -> ConvPoly {
-        ConvPoly {
-            coeffs: (0..n).map(|i| if i == 0 { c } else { 0 }).collect(),
-        }
+    pub fn constant(c: i32) -> ConvPoly {
+        ConvPoly { coeffs: vec![c] }
     }
 
     /// Returns the degree of the polynomial (i.e. the highest power of x with a non-zero coefficient)
@@ -114,10 +112,10 @@ impl ConvPoly {
     }
 
     pub fn add(&self, other: &ConvPoly) -> ConvPoly {
-        let max_len = self.coeffs.len().max(other.coeffs.len());
-        let mut result = Vec::with_capacity(max_len);
+        let min_len = self.coeffs.len().min(other.coeffs.len());
+        let mut result = Vec::with_capacity(min_len);
 
-        for i in 0..max_len {
+        for i in 0..min_len {
             let a = self.coeffs.get(i).copied().unwrap_or(0);
             let b = other.coeffs.get(i).copied().unwrap_or(0);
             result.push(a + b);
@@ -129,10 +127,10 @@ impl ConvPoly {
 
     /// Subtracts another polynomial from this one by subtracting the corresponding coefficients.
     pub fn sub(&self, other: &ConvPoly) -> ConvPoly {
-        let max_len = self.coeffs.len().max(other.coeffs.len());
-        let mut result = Vec::with_capacity(max_len);
+        let min_len = self.coeffs.len().min(other.coeffs.len());
+        let mut result = Vec::with_capacity(min_len);
 
-        for i in 0..max_len {
+        for i in 0..min_len {
             let a = self.coeffs.get(i).copied().unwrap_or(0);
             let b = other.coeffs.get(i).copied().unwrap_or(0);
             result.push(a - b);
@@ -145,7 +143,7 @@ impl ConvPoly {
     //NOTE: Could use FFT for polynomial multiplication if we want to maybe
     pub fn mul(&self, other: &ConvPoly) -> ConvPoly {
         if self.is_zero() || other.is_zero() {
-            return ConvPoly { coeffs: vec![0] };
+            return ConvPoly::constant(0);
         }
 
         let mut result = vec![0; self.coeffs.len() + other.coeffs.len() - 1];
