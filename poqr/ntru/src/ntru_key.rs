@@ -1,5 +1,5 @@
 use crate::convolution_polynomial::{ternary_polynomial, ConvPoly};
-use crate::ntru_util::serialize;
+use crate::ntru_util::{deserialize, serialize};
 use crate::params::*;
 
 /// An NTRU key pair
@@ -20,23 +20,41 @@ impl NtruKeyPair {
         }
     }
 
-    pub fn encrypt(self, msg: Vec<u8>) -> ConvPoly {
+    /// Encrypts a message using the NTRU encryption scheme
+    pub fn encrypt(&self, msg: Vec<u8>) -> ConvPoly {
         assert!(msg.len() * 5 <= N, "encrypt: message too long");
         // ASCII message serialized as a balanced ternary polynomial
         let ser_msg = serialize(msg);
-        // Computed as a perturbation T(d, d)
-        let r_poly = ternary_polynomial(N, D, D);
-        // Compute the encoded message
-        // e(x) ≡ m(x) + r(x)*h(x)  (mod q)
-        let enc_msg = ser_msg.add(&r_poly.mul(&self.public_key.h)).modulo(Q);
+        // Compute r(x) as a random perturbation in T(d, d)
+        let rand = ternary_polynomial(N, D, D);
+        // Compute the encrypted message e(x) ≡ m(x) + p*r(x)*h(x)  (mod q)
+        let p = ConvPoly::constant(P, N);
+        let enc_msg = ser_msg.add(&p.mul(&rand.mul(&self.public_key.h))).modulo(Q);
         enc_msg
     }
 
-    pub fn decrypt(self, enc_msg: ConvPoly) -> ConvPoly {
+    /// Decrypts a message using the NTRU encryption scheme
+    pub fn decrypt(&self, enc_msg: ConvPoly) -> Vec<u8> {
         // a(x) ≡ e(x) * f(x) (mod q)
-        let a = enc_msg.mul(&self.private_key.f).modulo(Q);
-        // NOTE: still need to Center-lift a(x)
-        todo!()
+        let a = enc_msg.mul(&self.private_key.f).center_lift(Q);
+        // m(x) ≡ a(x) * Fp(x) (mod p)
+        let msg_poly = a.mul(&self.private_key.f.inverse(P).unwrap()).modulo(P);
+        let msg = deserialize(msg_poly);
+        msg
+    }
+}
+
+#[cfg(test)]
+mod ntru_key_tests {
+    use super::*;
+
+    #[test]
+    fn test_ntru_encrypt_decrypt() {
+        let keypair = NtruKeyPair::new();
+        let msg = "minky".as_bytes().to_vec();
+        let enc_msg = keypair.encrypt(msg.clone());
+        let dec_msg = keypair.decrypt(enc_msg);
+        assert_eq!(msg, dec_msg);
     }
 }
 

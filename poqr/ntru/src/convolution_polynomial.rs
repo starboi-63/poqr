@@ -1,5 +1,5 @@
 use rand::prelude::*;
-use std::{fmt, ops::Rem};
+use std::fmt;
 
 // TERNARY POLYNOMIALS
 
@@ -101,6 +101,15 @@ impl ConvPoly {
 
         ConvPoly {
             coeffs: self.coeffs.iter().map(|x| x.rem_euclid(m)).collect(),
+        }
+    }
+
+    /// Lifts the polynomial out of the ring (Z/mZ)\[x\]/(x^N - 1) and into the ring Z\[x\]/(x^N - 1)
+    /// by center-lifting each coefficient from [0, m) --> (-m/2, m/2]. The result is a polynomial
+    /// with the property p(x) ≡ p(x).center_lift(m) (mod m).
+    pub fn center_lift(&self, m: i32) -> ConvPoly {
+        ConvPoly {
+            coeffs: self.coeffs.iter().map(|x| center_lift(*x, m)).collect(),
         }
     }
 
@@ -312,15 +321,6 @@ impl ConvPoly {
         }
 
         Ok(s)
-    }
-
-    /// Lifts the polynomial out of the ring (Z/mZ)\[x\]/(x^N - 1) and into the ring Z\[x\]/(x^N - 1)
-    /// by center-lifting each coefficient from [0, m) --> (-m/2, m/2]. The result is a polynomial
-    /// with the property p(x) ≡ p(x).center_lift(m) (mod m).
-    pub fn center_lift(&self, m: i32) -> ConvPoly {
-        ConvPoly {
-            coeffs: self.coeffs.iter().map(|x| center_lift(*x, m)).collect(),
-        }
     }
 }
 

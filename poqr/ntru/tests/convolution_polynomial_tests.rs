@@ -143,6 +143,35 @@ mod tests {
         }
 
         #[test]
+        fn test_convolution_polynomial_center_lift() {
+            // Example in the ring (Z/7Z)[x]/(x^5 - 1)
+            let poly = ConvPoly {
+                coeffs: vec![5, 3, -6, 2, 4], // 4x^4 + 2x^3 - 6x^2 + 3x + 5
+            };
+            let expected_lift = ConvPoly {
+                coeffs: vec![-2, 3, 1, 2, -3], // −3x^4 + 2x^3 + x^2 + 3x - 2
+            };
+            let lift = poly.center_lift(7);
+            assert_eq!(
+                expected_lift.coeffs, lift.coeffs,
+                "Center lift modulo 7 failed"
+            );
+
+            // Another example in the ring (Z/7Z)[x]/(x^5 - 1)
+            let poly = ConvPoly {
+                coeffs: vec![3, 0, 5, -6, 3], // 3x^4 - 6x^3 + 5x^2 + 3
+            };
+            let expected_lift = ConvPoly {
+                coeffs: vec![3, 0, -2, 1, 3], // 3x^4 + x^3 - 2x^2 + 3
+            };
+            let lift = poly.center_lift(7);
+            assert_eq!(
+                expected_lift.coeffs, lift.coeffs,
+                "Center lift modulo 7 failed"
+            );
+        }
+
+        #[test]
         fn test_convolution_polynomial_add() {
             // Addition without modulo
             let poly1 = ConvPoly {
