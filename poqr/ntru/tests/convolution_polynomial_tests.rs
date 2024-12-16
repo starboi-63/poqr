@@ -48,7 +48,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn test_convolution_polynomial_trim() {
+        fn test_trim() {
             // Trim all zeros
             let poly = ConvPoly {
                 coeffs: vec![0, 0, 0, 0, 0],
@@ -88,7 +88,7 @@ mod tests {
         }
 
         #[test]
-        fn test_constant_convolution_polynomial() {
+        fn test_constant() {
             // Zero polynomial
             let poly = ConvPoly::constant(0);
             assert_eq!(poly.coeffs, vec![0], "Constant polynomial failed");
@@ -103,7 +103,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_deg() {
+        fn test_deg() {
             // Normal polynomial
             let poly = ConvPoly {
                 coeffs: vec![0, 0, 3, 0, 0], // 3x^2
@@ -122,7 +122,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_is_zero() {
+        fn test_is_zero() {
             // Zero polynomial
             let zero_poly = ConvPoly { coeffs: vec![0; 5] };
             assert!(zero_poly.is_zero(), "Zero polynomial should return true");
@@ -156,7 +156,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_lc() {
+        fn test_lc() {
             // Leading coefficient at the end
             let poly = ConvPoly {
                 coeffs: vec![1, 2, 3, 4, 5], // 5x^4 + 4x^3 + 3x^2 + 2x + 1
@@ -183,7 +183,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_modulo() {
+        fn test_modulo() {
             // Modulo 5
             let poly = ConvPoly {
                 coeffs: vec![1, 2, 3, 4, 5], // 5x^4 + 4x^3 + 3x^2 + 2x + 1
@@ -220,7 +220,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_center_lift() {
+        fn test_center_lift() {
             // Example in the ring (Z/7Z)[x]/(x^5 - 1)
             let poly = ConvPoly {
                 coeffs: vec![5, 3, -6, 2, 4], // 4x^4 + 2x^3 - 6x^2 + 3x + 5
@@ -249,7 +249,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_add() {
+        fn test_add() {
             // Addition without modulo
             let poly1 = ConvPoly {
                 coeffs: vec![4, 3, 2], // 2x^2 + 3x + 4
@@ -298,7 +298,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_add_mod() {
+        fn test_add_mod() {
             // Modulo 5 addition without wraparound
             let poly1 = ConvPoly {
                 coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
@@ -341,7 +341,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_sub() {
+        fn test_sub() {
             // Subtraction without modulo
             let poly1 = ConvPoly {
                 coeffs: vec![4, 3, 2], // 2x^2 + 3x + 4
@@ -390,7 +390,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_sub_mod() {
+        fn test_sub_mod() {
             // Modulo 5 subtraction without wraparound
             let poly1 = ConvPoly {
                 coeffs: vec![4, 3, 2], // 2x^2 + 3x + 4
@@ -425,7 +425,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_mul() {
+        fn test_mul() {
             // Multiplication by zero (but not a well-formed zero polynomial)
             let poly1 = ConvPoly {
                 coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
@@ -512,7 +512,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_mul_mod() {
+        fn test_mul_mod() {
             // Example in the ring (Z/11Z)[x]/(x^5 - 1)
             let poly1 = ConvPoly {
                 coeffs: vec![1, -2, 0, 4, -1], // -x^4 + 4x^3 - 2x + 1
@@ -531,7 +531,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_div_mod() {
+        fn test_div_mod() {
             // Division by self should return 1
             let poly1 = ConvPoly {
                 coeffs: vec![1, 2, 3], // 3x^2 + 2x + 1
@@ -636,7 +636,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_extended_gcd() {
+        fn test_extended_gcd() {
             // Example in the ring (Z/2Z)[x]/(x^6 - 1) with gcd equal to 1
             let poly1 = ConvPoly {
                 coeffs: vec![1, 1, 0, 0, 1], // x^4 + x + 1
@@ -679,7 +679,7 @@ mod tests {
         }
 
         #[test]
-        fn test_convolution_polynomial_inverse() {
+        fn test_inverse() {
             // Example in the ring (Z/2Z)[x]/(x^5 - 1)
             let poly = ConvPoly {
                 coeffs: vec![1, 1, 0, 0, 1], // x^4 + x + 1
