@@ -78,6 +78,7 @@ impl NtruPublicKey {
     }
 }
 
+#[derive(Clone)]
 /// A private key used in the NTRU encryption scheme
 pub struct NtruPrivateKey {
     /// A random polynomial generated over T(D+1, D)

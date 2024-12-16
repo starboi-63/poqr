@@ -8,16 +8,21 @@ use super::payloads::{
 
 /// A packet sent over the POQR network
 pub struct OnionPacket {
-    header: OnionHeader,
-    msg: Message,
+    pub header: OnionHeader,
+    pub msg: Message,
 }
 
 impl OnionPacket {
     /// Serialize an OnionPacket into a big-endian byte array.
     pub fn to_be_bytes(&self, id_key: NtruPublicKey, onion_keys: Vec<RsaPublicKey>) -> Vec<u8> {
         let mut buf = Vec::new();
+
+        let msg_bytes = self.msg.to_be_bytes(id_key, onion_keys);
+        let msg_len: u32 = msg_bytes.len() as u32;
+
         buf.extend_from_slice(&self.header.circ_id.to_be_bytes());
-        buf.extend_from_slice(&self.msg.to_be_bytes(id_key, onion_keys));
+        buf.extend_from_slice(&msg_len.to_be_bytes());
+        buf.extend_from_slice(&msg_bytes);
         buf
     }
 
@@ -30,7 +35,8 @@ impl OnionPacket {
         let header = OnionHeader {
             circ_id: u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]),
         };
-        let msg = Message::from_be_bytes(buf[4..].to_vec(), id_key, onion_keys);
+        let msg_len = u32::from_be_bytes([buf[4], buf[5], buf[6], buf[7]]) as usize;
+        let msg = Message::from_be_bytes(buf[8..8 + msg_len].to_vec(), id_key, onion_keys);
         OnionPacket { header, msg }
     }
 }
@@ -38,7 +44,7 @@ impl OnionPacket {
 /// Packet header, contains metadata about the packet
 /// Unimplemented: Certificates are usually kept here, but left out for our implementation
 pub struct OnionHeader {
-    circ_id: u32,
+    pub circ_id: u32,
 }
 
 const MESSAGE_CREATE: u8 = 0;

@@ -1,13 +1,15 @@
-use crate::{Message, OnionPacket};
-use ntru::ntru_key::NtruPublicKey;
+use crate::{Message, OnionHeader, OnionPacket};
+use ntru::ntru_key::{NtruPrivateKey, NtruPublicKey};
 use rsa_ext::{RsaPrivateKey, RsaPublicKey};
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
 /// A channel between two nodes in the network through which messages can be sent.
 pub struct Channel {
-    /// The ID of the relay node that the channel is connected to.
-    pub id_key: NtruPublicKey,
+    /// The identity key of the remote node.
+    pub forward_id_key: NtruPublicKey,
+    /// Our own NTRU identity key
+    pub backward_id_key: NtruPrivateKey,
     /// The public keys of the remote nodes used to encrypt messages sent forwards through the connection.
     pub forward_onion_keys: Vec<RsaPublicKey>,
     /// The public keys of the remote nodes used to encrypt messages sent backwards through the connection.
@@ -18,16 +20,37 @@ pub struct Channel {
 
 impl Channel {
     pub fn send(&mut self, id: u32, msg: Message) {
-        let packet = OnionPack
-        let bytes = msg.to_be_bytes(self.id_key.clone(), self.forward_onion_keys.clone());
+        let packet = Channel::build_packet(id, msg);
+        let bytes =
+            packet.to_be_bytes(self.forward_id_key.clone(), self.forward_onion_keys.clone());
         self.connection.write(&bytes).unwrap();
     }
 
-    pub fn recv(&mut self) -> Message {
-        let mut buf: Vec<u8> = Vec::new();
-        match self.connection.read(&mut buf) {
-            Ok(_) => Message::from_be_bytes(buf),
-            Err(_) => panic!("Failed to read from connection"),
-        }
+    pub fn recv(&mut self) -> OnionPacket {
+        // Read the circuit ID
+        let mut circ_id_buf = [0u8; 4];
+        self.connection.read_exact(&mut circ_id_buf).unwrap();
+        let circ_id: u32 = u32::from_be_bytes(circ_id_buf);
+
+        // Read the message length
+        let mut msg_len_buf = [0u8; 4];
+        self.connection.read_exact(&mut msg_len_buf).unwrap();
+        let msg_len = u32::from_be_bytes(msg_len_buf) as usize;
+
+        // Read the message
+        let mut msg_buf = vec![0u8; msg_len];
+        self.connection.read_exact(&mut msg_buf).unwrap();
+        let msg: Message = Message::from_be_bytes(
+            msg_buf,
+            self.backward_id_key.clone(),
+            self.backward_onion_keys.clone(),
+        );
+
+        Channel::build_packet(circ_id, msg)
+    }
+
+    fn build_packet(id: u32, msg: Message) -> OnionPacket {
+        let header = OnionHeader { circ_id: id };
+        OnionPacket { header, msg }
     }
 }
