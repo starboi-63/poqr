@@ -2,6 +2,7 @@ use crate::Circuit;
 use std::collections::HashMap;
 
 pub struct CircuitTable {
+    /// Map of destination id to circuit
     circuits: HashMap<u32, Circuit>,
 }
 

@@ -22,6 +22,7 @@ impl NtruKeyPair {
     }
 }
 
+#[derive(Clone)]
 /// A public key used in the NTRU encryption scheme
 pub struct NtruPublicKey {
     h: ConvPoly,

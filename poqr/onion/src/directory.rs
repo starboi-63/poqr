@@ -1,13 +1,17 @@
 use crate::nodes::Relay;
 use ntru::ntru_key::NtruPublicKey;
+use rand::Rng;
 use std::collections::{HashMap, HashSet};
 use std::net::UdpSocket;
+use std::sync::{Arc, RwLock};
 
-struct RelayInfo {
-    port: u16,
-    public_key: NtruPublicKey,
+#[derive(Clone)]
+pub struct RelayInfo {
+    pub port: u16,
+    pub public_key: NtruPublicKey,
 }
 
+/// Directory of relays and their public info.
 pub struct Directory {
     /// Map from relay ID to public relay info
     relays: HashMap<u32, RelayInfo>,
@@ -51,25 +55,45 @@ impl Directory {
     }
 
     /// Generate a new relay and return its ID.
-    pub fn generate_relay(&mut self) -> u32 {
+    pub fn generate_relay(directory: Arc<RwLock<Directory>>) -> u32 {
+        let mut dir = directory.write().unwrap();
+
         // Find an unused port and relay ID
-        let (mut port, id) = (Self::random_high_port(), self.next_relay_id);
-        while self.used_ports.contains(&port) {
+        let (mut port, id) = (Self::random_high_port(), dir.next_relay_id);
+        while dir.used_ports.contains(&port) {
             port = Self::random_high_port();
         }
-        self.used_ports.insert(port);
+        dir.used_ports.insert(port);
 
         // Construct a new relay and add it to the directory
-        let relay = Relay::new(id, port);
+        let relay = Relay::new(id, port, directory.clone());
         let relay_info = RelayInfo {
             port,
             public_key: relay.onion_key.public,
         };
-        self.relays.insert(id, relay_info);
+        dir.relays.insert(id, relay_info);
 
         // Increment the next relay ID
-        self.next_relay_id += 1;
+        dir.next_relay_id += 1;
 
         id
+    }
+
+    /// Get the public info for a relay.
+    pub fn get_relay_info(&self, id: u32) -> Option<&RelayInfo> {
+        self.relays.get(&id)
+    }
+
+    /// Get a random relay from the directory.
+    pub fn get_random_relay(&self) -> Option<&RelayInfo> {
+        let mut rng = rand::thread_rng();
+
+        if self.relays.is_empty() {
+            return None;
+        }
+
+        let keys: Vec<&u32> = self.relays.keys().collect();
+        let random_key = keys[rng.gen_range(0..keys.len())];
+        self.relays.get(random_key)
     }
 }

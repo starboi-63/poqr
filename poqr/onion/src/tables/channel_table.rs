@@ -2,6 +2,7 @@ use crate::Channel;
 use std::collections::HashMap;
 
 pub struct ChannelTable {
+    /// Map of circuit id to channel
     channels: HashMap<u32, Channel>,
 }
 
@@ -22,5 +23,9 @@ impl ChannelTable {
 
     pub fn remove(&mut self, id: u32) -> Option<Channel> {
         self.channels.remove(&id)
+    }
+
+    pub fn contains_key(&self, id: &u32) -> bool {
+        self.channels.contains_key(id)
     }
 }
