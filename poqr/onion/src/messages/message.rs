@@ -1,12 +1,38 @@
+use ntru::convolution_polynomial::ConvPoly;
 use ntru::ntru_key::{NtruPrivateKey, NtruPublicKey};
-use rsa_ext::{PublicKey, RsaPublicKey};
+use rsa_ext::{PaddingScheme, PublicKey, RsaPrivateKey, RsaPublicKey};
 
-use super::payloads::{CreatePayload, CreatedPayload, ExtendPayload, ExtendedPayload};
+use super::payloads::{
+    BeginPayload, CreatePayload, CreatedPayload, DataPayload, ExtendPayload, ExtendedPayload,
+};
 
 /// A packet sent over the POQR network
 pub struct OnionPacket {
     header: OnionHeader,
     msg: Message,
+}
+
+impl OnionPacket {
+    /// Serialize an OnionPacket into a big-endian byte array.
+    pub fn to_be_bytes(&self, id_key: NtruPublicKey, onion_keys: Vec<RsaPublicKey>) -> Vec<u8> {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&self.header.circ_id.to_be_bytes());
+        buf.extend_from_slice(&self.msg.to_be_bytes(id_key, onion_keys));
+        buf
+    }
+
+    /// Deserialize an OnionPacket from a big-endian byte array.
+    pub fn from_be_bytes(
+        buf: &[u8],
+        id_key: NtruPrivateKey,
+        onion_keys: Vec<RsaPrivateKey>,
+    ) -> OnionPacket {
+        let header = OnionHeader {
+            circ_id: u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]),
+        };
+        let msg = Message::from_be_bytes(buf[4..].to_vec(), id_key, onion_keys);
+        OnionPacket { header, msg }
+    }
 }
 
 /// Packet header, contains metadata about the packet
@@ -46,46 +72,47 @@ pub enum RelayPayload {
 
 impl Message {
     /// Adds a layer of NTRU encryption to a Vec<u8> using a valid NTRU public key then serializes it to a new byte vector
-    fn add_quantum_onion_skin(bytes: &Vec<u8>, id_key: NtruPublicKey) -> Vec<u8> {
-        let poly = id_key.encrypt_bytes(bytes);
+    fn add_quantum_onion_skin(bytes: &[u8], id_key: NtruPublicKey) -> Vec<u8> {
+        let poly = id_key.encrypt_bytes(bytes.to_vec());
         poly.to_be_bytes()
     }
 
     /// Deserializes a serialized NTRU encrypted message, unencrypts it, then reserializes it to a vector of bytes.
-    fn remove_quantum_onion_skin(bytes: &Vec<u8>, id_key: NtruPrivateKey) -> Vec<u8> {
-        let poly = ConvPoly::from_be_bytes(bytes);
+    fn remove_quantum_onion_skin(bytes: &[u8], id_key: NtruPrivateKey) -> Vec<u8> {
+        let poly = ConvPoly::from_be_bytes(&bytes.to_vec());
         id_key.decrypt_to_bytes(poly)
     }
 
-    fn add_onion_skin(bytes: &Vec<u8>, onion_keys: Vec<RsaPublicKey>) -> Vec<u8> {
+    fn add_onion_skin(bytes: &[u8], onion_keys: Vec<RsaPublicKey>) -> Vec<u8> {
         if onion_keys.is_empty() {
             // No onion keys, return the original bytes
-            bytes.clone()
+            bytes.to_vec()
         } else {
             let padding = PaddingScheme::new_pkcs1v15_encrypt();
             let mut rng = rand::thread_rng();
             // Encrypt the message with the first onion key
-            let enc = onion_keys[0].encrypt(&mut rng, padding, bytes).unwrap();
+            let mut enc = onion_keys[0].encrypt(&mut rng, padding, bytes).unwrap();
             // Encrypt the message with the rest of the onion keys
             for i in 1..onion_keys.len() {
-                let ret = onion_keys[i].encrypt(&mut rng, padding, &enc).unwrap();
+                let padding = PaddingScheme::new_pkcs1v15_encrypt();
+                enc = onion_keys[i].encrypt(&mut rng, padding, &enc).unwrap();
             }
             enc
         }
     }
 
-    fn remove_onion_skin(bytes: &Vec<u8>, onion_keys: Vec<RsaPublicKey>) -> Vec<u8> {
+    fn remove_onion_skin(bytes: &[u8], onion_keys: Vec<RsaPrivateKey>) -> Vec<u8> {
         if onion_keys.is_empty() {
             // No onion keys, return the original bytes
-            bytes.clone()
+            bytes.to_vec()
         } else {
             let padding = PaddingScheme::new_pkcs1v15_encrypt();
-            let mut rng = rand::thread_rng();
             // Decrypt the message with the last onion key
-            let dec = onion_keys[0].decrypt(&mut rng, padding, bytes).unwrap();
+            let mut dec = onion_keys[0].decrypt(padding, bytes).unwrap();
             // Decrypt the message with the rest of the onion keys
             for i in 1..onion_keys.len() {
-                let ret = onion_keys[i].decrypt(&mut rng, padding, &dec).unwrap();
+                let padding = PaddingScheme::new_pkcs1v15_encrypt();
+                dec = onion_keys[i].decrypt(padding, &dec).unwrap();
             }
             dec
         }
@@ -130,14 +157,13 @@ impl Message {
                 }
             }
         }
-
-        Message::add_quantum_onion_skin(bytes, id_key)
+        Message::add_quantum_onion_skin(&buf, id_key)
     }
 
     pub fn from_be_bytes(
         msg: Vec<u8>,
-        onion_keys: Vec<RsaPublicKey>,
         id_key: NtruPrivateKey,
+        onion_keys: Vec<RsaPrivateKey>,
     ) -> Message {
         let msg = Message::remove_quantum_onion_skin(&msg, id_key);
 

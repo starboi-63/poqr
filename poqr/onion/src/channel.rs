@@ -1,8 +1,8 @@
-use crate::{RelayPayload, Message, RelayId, OnionPacket, OnionHeader};
-use rsa_ext::{RsaPublicKey, PaddingScheme, PublicKey};
+use crate::{Message, OnionPacket};
+use ntru::ntru_key::NtruPublicKey;
+use rsa_ext::RsaPublicKey;
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use rand::Rng;
 
 /// A channel between two nodes in the network through which messages can be sent.
 pub struct Channel {
@@ -16,7 +16,7 @@ pub struct Channel {
 
 impl Channel {
     pub fn send(&mut self, packet: OnionPacket) {
-        let bytes = packet.to_be_bytes();
+        let bytes = packet.to_be_bytes(self.id_key.clone(), self.onion_keys.clone());
         self.connection.write(&bytes).unwrap();
     }
 
@@ -27,6 +27,4 @@ impl Channel {
             Err(_) => panic!("Failed to read from connection"),
         }
     }
-}
-
 }
