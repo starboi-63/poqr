@@ -52,7 +52,7 @@ impl NtruPublicKey {
     }
 
     /// Serializes the public key into a byte vector
-    pub fn serialize(&self) -> Vec<u8> {
+    pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(self.h.coeffs.len() * size_of::<i32>());
         for coeff in &self.h.coeffs {
             buf.extend_from_slice(&coeff.to_be_bytes());
@@ -61,7 +61,7 @@ impl NtruPublicKey {
     }
 
     /// Deserializes a byte vector into an NTRU public key
-    pub fn deserialize(buf: &[u8]) -> NtruPublicKey {
+    pub fn from_be_bytes(buf: &[u8]) -> NtruPublicKey {
         let mut coeffs = Vec::with_capacity(buf.len() / size_of::<i32>());
         for chunk in buf.chunks(size_of::<i32>()) {
             let mut bytes = [0; size_of::<i32>()];
@@ -114,7 +114,7 @@ impl NtruPrivateKey {
     }
 
     /// Serializes the private key into a byte vector
-    pub fn serialize(&self) -> Vec<u8> {
+    pub fn to_be_bytes(&self) -> Vec<u8> {
         // Allocate space for the four polynomials in the private key (and their lengths)
         let total_coeffs = self.f.coeffs.len()
             + self.f_p.coeffs.len()
@@ -134,7 +134,7 @@ impl NtruPrivateKey {
     }
 
     /// Deserializes a byte vector into an NTRU private key
-    pub fn deserialize(buf: &[u8]) -> NtruPrivateKey {
+    pub fn from_be_bytes(buf: &[u8]) -> NtruPrivateKey {
         let mut polys: Vec<ConvPoly> = Vec::new();
         let mut i = 0;
         let num_polys = 4;

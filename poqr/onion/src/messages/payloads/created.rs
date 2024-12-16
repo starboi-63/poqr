@@ -7,13 +7,13 @@ pub struct CreatedPayload {
 impl CreatedPayload {
     /// Serialize a CreatedPayload into a byte buffer.
     pub fn serialize(&self) -> Vec<u8> {
-        self.public_key.serialize()
+        self.public_key.to_be_bytes()
     }
 
     /// Deserialize a CreatedPayload from a byte buffer.
     pub fn deserialize(buf: &[u8]) -> CreatedPayload {
         CreatedPayload {
-            public_key: NtruPublicKey::deserialize(buf),
+            public_key: NtruPublicKey::from_be_bytes(buf),
         }
     }
 }
