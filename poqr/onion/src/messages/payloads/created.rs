@@ -1,8 +1,8 @@
-use ntru::ntru_key::NtruPublicKey;
+use rsa::RsaPublicKey;
 
 pub struct CreatedPayload {
     /// A newly generated public onion key of the node sending the CREATED message.
-    public_key: NtruPublicKey,
+    public_key: RsaPublicKey,
 }
 
 impl CreatedPayload {

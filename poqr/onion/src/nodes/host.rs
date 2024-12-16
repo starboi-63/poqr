@@ -1,10 +1,10 @@
 use crate::{Channel, ChannelTable, Circuit, CircuitTable, Directory, RelayInfo};
 use ntru::NtruKeyPair;
+use std::collections::HashSet;
 use std::{
     net::TcpStream,
     sync::{Arc, RwLock},
 };
-use std::collections::HashSet;
 
 const CIRCUIT_LENGTH: usize = 3;
 const LOCALHOST: &str = "127.0.0.1";
@@ -28,19 +28,25 @@ impl Host {
         }
     }
 
-    pub fn create_channel(&mut self, port: u16, relay_id: u32, circuit_id: u32, encryption_key: Option<NtruPublicKey>) {
+    pub fn create_channel(
+        &mut self,
+        port: u16,
+        relay_id: u32,
+        circuit_id: u32,
+        encryption_key: Option<NtruPublicKey>,
+    ) {
         let connection = TcpStream::connect(format!("{LOCALHOST}:{port}")).unwrap();
         // If a key is given, instantiate public keys vec
         let k_pub_vec = {
             match encryption_key {
                 Some(key) => vec![key],
-                None => Vec::new()
+                None => Vec::new(),
             }
         };
         // Instantiate channel
         let channel = Channel {
-            relay_id,
-            rsa_public_keys: k_pub_vec,
+            id_key: relay_id,
+            onion_keys: k_pub_vec,
             connection,
             directory: self.directory.clone(),
         };
@@ -52,8 +58,8 @@ impl Host {
         let keypairs: Vec<NtruKeyPair> = (0..CIRCUIT_LENGTH).map(|_| NtruKeyPair::new()).collect();
 
         // Instantiate exclude list for connection
-        let exclude_list: HashSet<u32> = HashSet::new(); 
- 
+        let exclude_list: HashSet<u32> = HashSet::new();
+
         let relay = {
             let dir = self.directory.read().unwrap();
             dir.get_random_relay(exclude_list).unwrap().clone()
@@ -67,7 +73,7 @@ impl Host {
         };
 
         // Establish connection with first relay and send create message
-        self.create_channel(relay.port, relay_id, circuit_id, None); 
+        self.create_channel(relay.port, relay_id, circuit_id, None);
         let channel = self.channel_table.get(circuit_id).unwrap();
         // Wait for the CREATED message
 

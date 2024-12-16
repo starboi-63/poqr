@@ -1,4 +1,4 @@
-use rsa::{RsaPublicKey};
+use rsa::RsaPublicKey;
 
 pub struct CreatePayload {
     /// A newly generated public onion key for the backwards direction of the circuit.
@@ -14,7 +14,7 @@ impl CreatePayload {
     /// Deserialize the CreatePayload from a big-endian byte array.
     pub fn from_be_bytes(buf: &[u8]) -> CreatePayload {
         CreatePayload {
-            public_key: NtruPublicKey::from_be_bytes(buf),
+            public_key: RsaPublicKey::from_be_bytes(buf),
         }
     }
 }
