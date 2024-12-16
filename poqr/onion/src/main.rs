@@ -1,4 +1,8 @@
 use std::net::UdpSocket;
+mod directory;
+mod messages;
+mod nodes;
+mod tables;
 
 // Just example udp code from rust docs
 fn main() -> std::io::Result<()> {

@@ -312,6 +312,18 @@ impl ConvPoly {
 
         Ok(s)
     }
+
+    /// Deserializes a byte vector into a convolution polynomial. The byte vector is assumed to be
+    /// in big-endian format with each coefficient represented by 4 bytes.
+    pub fn deserialize(buf: &Vec<u8>) -> ConvPoly {
+        let mut coeffs = Vec::new();
+        for i in (0..buf.len()).step_by(size_of::<i32>()) {
+            let coeff = i32::from_be_bytes([buf[i], buf[i + 1], buf[i + 2], buf[i + 3]]);
+            coeffs.push(coeff);
+        }
+
+        ConvPoly { coeffs }
+    }
 }
 
 // INTEGER ARITHMETIC
