@@ -43,6 +43,8 @@ mod tests {
     }
 
     mod convolution_polynomial_tests {
+        use rand::seq::SliceRandom;
+
         use super::*;
 
         #[test]
@@ -635,7 +637,7 @@ mod tests {
 
         #[test]
         fn test_convolution_polynomial_extended_gcd() {
-            // Example in the ring (Z/2Z)[x]/(x^6 - 1)
+            // Example in the ring (Z/2Z)[x]/(x^6 - 1) with gcd equal to 1
             let poly1 = ConvPoly {
                 coeffs: vec![1, 1, 0, 0, 1], // x^4 + x + 1
             };
@@ -650,6 +652,27 @@ mod tests {
                 coeffs: vec![0, 1, 1], // x^2 + x
             };
             let (gcd, s, t) = ConvPoly::extended_gcd(&poly1, &poly2, 2, 6).unwrap();
+            assert_eq!(expected_gcd.coeffs, gcd.coeffs, "Extended GCD gcd failed");
+            assert_eq!(expected_s.coeffs, s.coeffs, "Extended GCD s failed");
+            assert_eq!(expected_t.coeffs, t.coeffs, "Extended GCD t failed");
+
+            // Example in the ring (Z/19Z)[x]/(x^7 - 1) with gcd not equal to 1
+            let poly1 = ConvPoly {
+                coeffs: vec![0, 0, 18, 3, 3, 6], // 6x^5 + 3x^4 + 3x^3 + 18x^2
+            };
+            let poly2 = ConvPoly {
+                coeffs: vec![-1, 0, 0, 0, 0, 0, 1], // x^6 - 1
+            };
+            let expected_gcd = ConvPoly {
+                coeffs: vec![11, 1], // x + 11
+            };
+            let expected_s = ConvPoly {
+                coeffs: vec![18, 13, 17, 8, 9], //  9x^4 + 8x^3 + 17x^2 + 13x + 18
+            };
+            let expected_t = ConvPoly {
+                coeffs: vec![8, 18, 1, 3], // 3x^3 + x^2 + 18x + 8
+            };
+            let (gcd, s, t) = ConvPoly::extended_gcd(&poly1, &poly2, 19, 7).unwrap();
             assert_eq!(expected_gcd.coeffs, gcd.coeffs, "Extended GCD gcd failed");
             assert_eq!(expected_s.coeffs, s.coeffs, "Extended GCD s failed");
             assert_eq!(expected_t.coeffs, t.coeffs, "Extended GCD t failed");
@@ -706,6 +729,36 @@ mod tests {
             assert_eq!(
                 expected_inverse.coeffs, inverse.coeffs,
                 "Inverse modulo 5 failed"
+            );
+
+            // Test random polynomials
+            let num_tests = 100;
+            let mut rng = rand::thread_rng();
+            let mut primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];
+            let mut num_inverse_found = 0;
+
+            for _ in 0..num_tests {
+                primes.shuffle(&mut rng);
+                let (n, m) = (rng.gen_range(1..=20), primes[0]);
+
+                let mut poly = ConvPoly { coeffs: vec![] };
+                for _ in 0..n {
+                    poly.coeffs.push(rng.gen_range(-1000..=1000));
+                }
+                poly = poly.modulo(m).trim();
+
+                if let Ok(inverse) = poly.inverse(m, n) {
+                    let product = poly.mul(&inverse, n).modulo(m);
+                    assert_eq!(ConvPoly::constant(1), product, "Inverse failed");
+                    num_inverse_found += 1;
+                } else {
+                    println!("(Z/{}Z)[x]/(x^{} - 1) No inverse found for {}", m, n, poly,);
+                }
+            }
+
+            println!(
+                "Found inverses for {} polynomials out of {}",
+                num_inverse_found, num_tests
             );
         }
     }
