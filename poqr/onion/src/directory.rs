@@ -11,10 +11,12 @@ pub struct RelayInfo {
     pub id_key_pub: NtruPublicKey,
 }
 
+type RelayId = u32;
+
 /// Directory of relays and their public info.
 pub struct Directory {
     /// Map from relay ID to public relay info
-    relays: HashMap<u32, RelayInfo>,
+    relays: HashMap<RelayId, RelayInfo>,
     /// Set of used ports
     used_ports: HashSet<u16>,
     /// Next relay ID to assign
@@ -55,7 +57,7 @@ impl Directory {
     }
 
     /// Generate a new relay and return its ID.
-    pub fn generate_relay(directory: Arc<RwLock<Directory>>) -> u32 {
+    pub fn generate_relay(directory: Arc<RwLock<Directory>>) -> RelayId {
         let mut dir = directory.write().unwrap();
 
         // Find an unused port and relay ID
@@ -80,20 +82,27 @@ impl Directory {
     }
 
     /// Get the public info for a relay.
-    pub fn get_relay_info(&self, id: u32) -> Option<&RelayInfo> {
+    pub fn get_relay_info(&self, id: RelayId) -> Option<&RelayInfo> {
         self.relays.get(&id)
     }
 
     /// Get a random relay from the directory.
-    pub fn get_random_relay(&self) -> Option<&RelayInfo> {
-        let mut rng = rand::thread_rng();
-
+    pub fn get_random_relay(&self, exclude_list: HashSet<RelayId>) -> Option<&RelayInfo> {
         if self.relays.is_empty() {
             return None;
         }
 
-        let keys: Vec<&u32> = self.relays.keys().collect();
-        let random_key = keys[rng.gen_range(0..keys.len())];
+        let keys: Vec<&RelayId> = self.relays.keys().collect();
+        let mut rng = rand::thread_rng();
+
+        let random_key: &RelayId = {
+            let mut key = keys[rng.gen_range(0..keys.len())];
+            while exclude_list.contains(key) {
+                key = keys[rng.gen_range(0..keys.len())];
+            }
+            key
+        };
+
         self.relays.get(random_key)
     }
 }

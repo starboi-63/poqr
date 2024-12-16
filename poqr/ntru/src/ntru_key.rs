@@ -37,20 +37,24 @@ impl NtruPublicKey {
         let h = f_inv.mul(&k_priv.g, N);
         NtruPublicKey { h }
     }
-
-    /// Encrypts a message using the NTRU encryption scheme
-    pub fn encrypt(&self, msg: Vec<u8>) -> ConvPoly {
-        assert!(msg.len() * 5 <= N, "encrypt: message too long");
-        // ASCII message serialized as a balanced ternary polynomial
-        let ser_msg = serialize(msg);
+    
+    /// Encrypts a convolution polynomial represented message using the NTRU encryption scheme.
+    /// Used for successive layers of encryption after a message has already been serialized.
+    pub fn encrypt_poly(&self, msg: ConvPoly) -> ConvPoly {
         // Compute r(x) as a random perturbation in T(d, d)
         let rand = ternary_polynomial(N, D, D);
         // Compute the encrypted message e(x) ≡ m(x) + p*r(x)*h(x)  (mod q)
         let p = ConvPoly::constant(P);
-        let enc_msg = ser_msg.add(&p.mul(&rand.mul(&self.h, N), N)).modulo(Q);
+        let enc_msg = msg.add(&p.mul(&rand.mul(&self.h, N), N)).modulo(Q);
         enc_msg
     }
 
+    /// Encrypts an ASCII byte vector of a message using the NTRU encryption scheme
+    /// Should be used as a first layer of encryption since it serializes the message.
+    pub fn encrypt_bytes(&self, msg: Vec<u8>) -> ConvPoly {
+        self.encrypt_poly(serialize(msg))
+    }
+    
     /// Serializes the public key into a byte vector
     pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(self.h.coeffs.len() * size_of::<i32>());
@@ -103,55 +107,19 @@ impl NtruPrivateKey {
         }
     }
 
-    /// Decrypts a message using the NTRU encryption scheme
-    pub fn decrypt(&self, enc_msg: ConvPoly) -> Vec<u8> {
-        // a(x) ≡ e(x) * f(x) (mod q)
-        let a = enc_msg.mul(&self.f, N).center_lift(Q);
-        // m(x) ≡ a(x) * Fp(x) (mod p)
-        let msg_poly = a.mul(&self.f_p, N).modulo(P);
-        let msg = deserialize(msg_poly);
-        msg
+    /// Decrypts a polynomial-encoded message using the NTRU encryption scheme into a byte vector
+    /// ONLY FUNCTIONAL ON SINGLE LAYER ENCRYPTION ; MULTIPLE LAYERS WILL BREAK!
+    pub fn decrypt_to_bytes(&self, enc_msg: ConvPoly) -> Vec<u8> {
+        deserialize(self.decrypt_to_poly(enc_msg))
     }
 
-    /// Serializes the private key into a byte vector
-    pub fn to_be_bytes(&self) -> Vec<u8> {
-        // Allocate space for the four polynomials in the private key (and their lengths)
-        let total_coeffs = self.f.coeffs.len()
-            + self.f_p.coeffs.len()
-            + self.f_q.coeffs.len()
-            + self.g.coeffs.len();
-        let mut buf =
-            Vec::with_capacity((4 * size_of::<u32>()) + (total_coeffs * size_of::<i32>()));
-        // Serialize the four polynomials in the private key
-        let poly_list = [&self.f, &self.f_p, &self.f_q, &self.g];
-        for poly in poly_list {
-            buf.extend_from_slice(&(poly.coeffs.len() as u32).to_be_bytes());
-            for coeff in &poly.coeffs {
-                buf.extend_from_slice(&coeff.to_be_bytes());
-            }
-        }
-        buf
-    }
-
-    /// Deserializes a byte vector into an NTRU private key
-    pub fn from_be_bytes(buf: &[u8]) -> NtruPrivateKey {
-        let mut polys: Vec<ConvPoly> = Vec::new();
-        let mut i = 0;
-        let num_polys = 4;
-
-        for _ in 0..num_polys {
-            let len = u32::from_be_bytes([buf[i], buf[i + 1], buf[i + 2], buf[i + 3]]) as usize;
-            let coeff_bytes = buf[i..(i + len * size_of::<i32>())].to_vec();
-            polys.push(ConvPoly::deserialize(&coeff_bytes));
-            i += size_of::<u32>() + len * size_of::<i32>();
-        }
-
-        let (f, f_p, f_q, g) = (
-            polys[0].clone(),
-            polys[1].clone(),
-            polys[2].clone(),
-            polys[3].clone(),
-        );
-        NtruPrivateKey { f, f_p, f_q, g }
+    /// Decrypts a polynomial-encoded message using the NTRU encryption scheme into another polynomial
+    /// ONLY FUNCTIONAL ON MULTI-LAYERED ENCRYPTION : FINAL LAYER WILL BREAK!
+    pub fn decrypt_to_poly(&self, enc_msg: ConvPoly) -> ConvPoly {
+       // a(x) ≡ e(x) * f(x) (mod q)
+       let a = enc_msg.mul(&self.f, N).center_lift(Q);
+       // m(x) ≡ a(x) * Fp(x) (mod p)
+       let msg_poly = a.mul(&self.f_p, N).modulo(P);
+       msg_poly
     }
 }

@@ -1,9 +1,11 @@
 use crate::Channel;
 use std::collections::HashMap;
 
+type CircuitId = u32;
+
 pub struct ChannelTable {
     /// Map of circuit id to an encryption key and channel
-    channels: HashMap<u32, Channel>,
+    channels: HashMap<CircuitId, Channel>,
 }
 
 impl ChannelTable {
@@ -13,19 +15,19 @@ impl ChannelTable {
         }
     }
 
-    pub fn insert(&mut self, id: u32, channel: Channel) {
+    pub fn insert(&mut self, id: CircuitId, channel: Channel) {
         self.channels.insert(id, channel);
     }
 
-    pub fn get(&self, id: u32) -> Option<&Channel> {
+    pub fn get(&self, id: CircuitId) -> Option<&Channel> {
         self.channels.get(&id)
     }
 
-    pub fn remove(&mut self, id: u32) -> Option<Channel> {
+    pub fn remove(&mut self, id: CircuitId) -> Option<Channel> {
         self.channels.remove(&id)
     }
 
-    pub fn contains_key(&self, id: &u32) -> bool {
-        self.channels.contains_key(id)
+    pub fn contains_key(&self, id: CircuitId) -> bool {
+        self.channels.contains_key(&id)
     }
 }
