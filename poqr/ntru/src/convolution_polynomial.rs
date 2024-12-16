@@ -172,8 +172,8 @@ impl ConvPoly {
     }
 
     /// Divides the polynomial by another polynomial and returns the quotient and remainder. The division is
-    /// treated as though it is happening within the polynomial ring (Z/mZ)\[x\]/(x^n-1). If `m` is not a unit in
-    /// the ring (Z/mZ), then the division is not possible and an error is returned.
+    /// treated as though it is happening within the polynomial ring (Z/mZ)\[x\]/(x^n-1). If the leading coefficient
+    /// of the divisor is not a unit in the ring (Z/mZ), then the division is not possible and an error is returned.
     pub fn div_mod(
         &self,
         divisor: &ConvPoly,
