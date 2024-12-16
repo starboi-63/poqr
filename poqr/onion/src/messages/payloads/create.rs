@@ -1,8 +1,8 @@
-use ntru::ntru_key::NtruPublicKey;
+use rsa::{RsaPublicKey};
 
 pub struct CreatePayload {
     /// A newly generated public onion key for the backwards direction of the circuit.
-    pub public_key: NtruPublicKey,
+    pub public_key: RsaPublicKey,
 }
 
 impl CreatePayload {

@@ -71,7 +71,7 @@ impl Directory {
         let relay = Relay::new(id, port, directory.clone());
         let relay_info = RelayInfo {
             port,
-            id_key_pub: relay.id_key_pub.public,
+            id_key_pub: relay.identity_key.public,
         };
         dir.relays.insert(id, relay_info);
 

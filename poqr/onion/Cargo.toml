@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 ntru = { path = "../ntru" }
 rand = "0.8.5"
+rsa_ext = "0.1.2"

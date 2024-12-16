@@ -1,5 +1,5 @@
 use crate::{Channel, ChannelTable, Circuit, CircuitTable, Directory, RelayInfo};
-use ntru::{ntru_key::NtruPublicKey, NtruKeyPair};
+use ntru::NtruKeyPair;
 use std::{
     net::TcpStream,
     sync::{Arc, RwLock},
@@ -13,7 +13,8 @@ pub struct Host {
     port: u16,
     channel_table: ChannelTable,
     circuit_table: CircuitTable,
-    directory: Arc<RwLock<Directory>>,
+    identity_key: NtruKeyPair,
+    pub directory: Arc<RwLock<Directory>>,
 }
 
 impl Host {
@@ -22,11 +23,12 @@ impl Host {
             port,
             channel_table: ChannelTable::new(),
             circuit_table: CircuitTable::new(),
+            identity_key: NtruKeyPair::new(),
             directory,
         }
     }
 
-    pub fn create_channel(&mut self, port: u16, circuit_id: u32, encryption_key: Option<NtruPublicKey>) {
+    pub fn create_channel(&mut self, port: u16, relay_id: u32, circuit_id: u32, encryption_key: Option<NtruPublicKey>) {
         let connection = TcpStream::connect(format!("{LOCALHOST}:{port}")).unwrap();
         // If a key is given, instantiate public keys vec
         let k_pub_vec = {
@@ -37,8 +39,10 @@ impl Host {
         };
         // Instantiate channel
         let channel = Channel {
-            public_keys: k_pub_vec,
+            relay_id,
+            rsa_public_keys: k_pub_vec,
             connection,
+            directory: self.directory.clone(),
         };
         self.channel_table.insert(circuit_id, channel);
     }
@@ -63,7 +67,7 @@ impl Host {
         };
 
         // Establish connection with first relay and send create message
-        self.create_channel(relay.port, circuit_id, None); 
+        self.create_channel(relay.port, relay_id, circuit_id, None); 
         let channel = self.channel_table.get(circuit_id).unwrap();
         // Wait for the CREATED message
 

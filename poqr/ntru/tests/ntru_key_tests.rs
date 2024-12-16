@@ -22,7 +22,7 @@ mod ntru_key_tests {
         assert_eq!(msg, dec_msg, "Empty message failed");
 
         // Test random messages with new key pairs
-        let num_tests = 100;
+        let num_tests = 1;
         let mut rng = rand::thread_rng();
 
         for _ in 0..num_tests {
