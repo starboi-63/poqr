@@ -2,7 +2,7 @@ use crate::Channel;
 use std::collections::HashMap;
 
 pub struct ChannelTable {
-    /// Map of circuit id to channel
+    /// Map of circuit id to an encryption key and channel
     channels: HashMap<u32, Channel>,
 }
 

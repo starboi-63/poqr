@@ -8,7 +8,7 @@ use std::sync::{Arc, RwLock};
 #[derive(Clone)]
 pub struct RelayInfo {
     pub port: u16,
-    pub public_key: NtruPublicKey,
+    pub id_key_pub: NtruPublicKey,
 }
 
 /// Directory of relays and their public info.
@@ -69,7 +69,7 @@ impl Directory {
         let relay = Relay::new(id, port, directory.clone());
         let relay_info = RelayInfo {
             port,
-            public_key: relay.onion_key.public,
+            id_key_pub: relay.id_key_pub.public,
         };
         dir.relays.insert(id, relay_info);
 

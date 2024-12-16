@@ -27,7 +27,7 @@ impl Host {
     }
 
     pub fn create_channel(&mut self, relay_info: RelayInfo, circuit_id: u32) {
-        let (encryption_key, port) = (relay_info.public_key, relay_info.port);
+        let (encryption_key, port) = (relay_info.id_key_pub, relay_info.port);
         let connection = TcpStream::connect(format!("127.0.0.1:{port}")).unwrap();
         let channel = Channel {
             connection,
@@ -38,7 +38,7 @@ impl Host {
 
     pub fn create_circuit(&mut self) -> Circuit {
         // Send a CREATE message to the first relay in the circuit
-        // NOTE: need to prevent the random relay from being the same as the host (our ourselves)
+        // NOTE: need to prevent the random relay from being the same as the host (or ourselves)
         let relay_info = {
             let dir = self.directory.read().unwrap();
             dir.get_random_relay().unwrap().clone()
