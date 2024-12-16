@@ -1,25 +1,20 @@
+use ntru::ntru_key::NtruPublicKey;
+
 pub struct ExtendPayload {
-    pub next_hop: u16,
-    pub encrypted_keypair: Vec<u8>,
+    /// A newly generated public onion key for the backwards direction of the circuit.
+    pub public_key: NtruPublicKey,
 }
 
 impl ExtendPayload {
-    /// Serialize an ExtendPayload into a byte buffer.
-    pub fn serialize(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.extend_from_slice(&self.next_hop.to_be_bytes());
-        buf.extend_from_slice(&self.encrypted_keypair);
-        buf
+    /// Serialize an ExtendPayload into a big-endian byte array.
+    pub fn to_be_bytes(&self) -> Vec<u8> {
+        self.public_key.to_be_bytes()
     }
 
-    /// Deserialize an ExtendPayload from a byte buffer.
-    pub fn deserialize(buf: &[u8]) -> ExtendPayload {
-        let next_hop = u16::from_be_bytes([buf[0], buf[1]]);
-        let encrypted_keypair = buf[2..].to_vec();
-
+    /// Deserialize an ExtendPayload from a big-endian byte array.
+    pub fn from_be_bytes(buf: &[u8]) -> ExtendPayload {
         ExtendPayload {
-            next_hop,
-            encrypted_keypair,
+            public_key: NtruPublicKey::from_be_bytes(buf),
         }
     }
 }

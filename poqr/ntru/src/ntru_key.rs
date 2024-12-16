@@ -37,7 +37,7 @@ impl NtruPublicKey {
         let h = f_inv.mul(&k_priv.g, N);
         NtruPublicKey { h }
     }
-    
+
     /// Encrypts a convolution polynomial represented message using the NTRU encryption scheme.
     /// Used for successive layers of encryption after a message has already been serialized.
     pub fn encrypt_poly(&self, msg: ConvPoly) -> ConvPoly {
@@ -54,7 +54,7 @@ impl NtruPublicKey {
     pub fn encrypt_bytes(&self, msg: Vec<u8>) -> ConvPoly {
         self.encrypt_poly(serialize(msg))
     }
-    
+
     /// Serializes the public key into a byte vector
     pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(self.h.coeffs.len() * size_of::<i32>());
@@ -116,10 +116,10 @@ impl NtruPrivateKey {
     /// Decrypts a polynomial-encoded message using the NTRU encryption scheme into another polynomial
     /// ONLY FUNCTIONAL ON MULTI-LAYERED ENCRYPTION : FINAL LAYER WILL BREAK!
     pub fn decrypt_to_poly(&self, enc_msg: ConvPoly) -> ConvPoly {
-       // a(x) ≡ e(x) * f(x) (mod q)
-       let a = enc_msg.mul(&self.f, N).center_lift(Q);
-       // m(x) ≡ a(x) * Fp(x) (mod p)
-       let msg_poly = a.mul(&self.f_p, N).modulo(P);
-       msg_poly
+        // a(x) ≡ e(x) * f(x) (mod q)
+        let a = enc_msg.mul(&self.f, N).center_lift(Q);
+        // m(x) ≡ a(x) * Fp(x) (mod p)
+        let msg_poly = a.mul(&self.f_p, N).modulo(P);
+        msg_poly
     }
 }

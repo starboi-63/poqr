@@ -313,9 +313,9 @@ impl ConvPoly {
         Ok(s)
     }
 
-    /// Serializes the convolution polynomial into a big-endian byte vector. Each coefficient 
+    /// Serializes the convolution polynomial into a big-endian byte vector. Each coefficient
     /// is represented by 4 bytes
-    pub fn serialize(&self) -> Vec<u8> {
+    pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         for &coeff in &self.coeffs {
             buf.extend_from_slice(&coeff.to_be_bytes());
@@ -326,7 +326,7 @@ impl ConvPoly {
 
     /// Deserializes a byte vector into a convolution polynomial. The byte vector is assumed to be
     /// in big-endian format with each coefficient represented by 4 bytes.
-    pub fn deserialize(buf: &Vec<u8>) -> ConvPoly {
+    pub fn from_be_bytes(buf: &Vec<u8>) -> ConvPoly {
         let mut coeffs = Vec::new();
         for i in (0..buf.len()).step_by(size_of::<i32>()) {
             let coeff = i32::from_be_bytes([buf[i], buf[i + 1], buf[i + 2], buf[i + 3]]);

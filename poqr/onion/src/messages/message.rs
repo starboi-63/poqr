@@ -28,17 +28,17 @@ pub enum RelayPayload {
 }
 
 impl Message {
-    pub fn serialize(&self) -> Vec<u8> {
+    pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
 
         match self {
             Message::Create(payload) => {
                 buf.push(MESSAGE_CREATE);
-                buf.extend_from_slice(&payload.serialize());
+                buf.extend_from_slice(&payload.to_be_bytes());
             }
             Message::Created(payload) => {
                 buf.push(MESSAGE_CREATED);
-                buf.extend_from_slice(&payload.serialize());
+                buf.extend_from_slice(&payload.to_be_bytes());
             }
             Message::Relay(payload) => {
                 buf.push(MESSAGE_RELAY);
@@ -46,11 +46,11 @@ impl Message {
                 match payload {
                     RelayPayload::Extend(payload) => {
                         buf.push(PAYLOAD_EXTEND);
-                        buf.extend_from_slice(&payload.serialize());
+                        buf.extend_from_slice(&payload.to_be_bytes());
                     }
                     RelayPayload::Extended(payload) => {
                         buf.push(PAYLOAD_EXTENDED);
-                        buf.extend_from_slice(&payload.serialize());
+                        buf.extend_from_slice(&payload.to_be_bytes());
                     } // RelayPayload::Begin(payload) => {
                       //     buf.push(PAYLOAD_BEGIN);
                       //     buf.extend_from_slice(&payload.serialize());
@@ -66,18 +66,18 @@ impl Message {
         buf
     }
 
-    pub fn deserialize(msg: Vec<u8>) -> Message {
+    pub fn from_be_bytes(msg: Vec<u8>) -> Message {
         match msg[0] {
-            MESSAGE_CREATE => Message::Create(CreatePayload::deserialize(&msg[1..])),
-            MESSAGE_CREATED => Message::Created(CreatedPayload::deserialize(&msg[1..])),
+            MESSAGE_CREATE => Message::Create(CreatePayload::from_be_bytes(&msg[1..])),
+            MESSAGE_CREATED => Message::Created(CreatedPayload::from_be_bytes(&msg[1..])),
             MESSAGE_RELAY => {
                 match msg[1] {
                     PAYLOAD_EXTEND => {
-                        let payload = ExtendPayload::deserialize(&msg[2..]);
+                        let payload = ExtendPayload::from_be_bytes(&msg[2..]);
                         Message::Relay(RelayPayload::Extend(payload))
                     }
                     PAYLOAD_EXTENDED => {
-                        let payload = ExtendedPayload::deserialize(&msg[2..]);
+                        let payload = ExtendedPayload::from_be_bytes(&msg[2..]);
                         Message::Relay(RelayPayload::Extended(payload))
                     }
                     // PAYLOAD_BEGIN => {
