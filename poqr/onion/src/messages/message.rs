@@ -59,13 +59,10 @@ pub enum Message {
     Relay(RelayPayload),
 }
 
-const PAYLOAD_CREATE: u8 = 0;
-const PAYLOAD_CREATED: u8 = 1;
-const PAYLOAD_EXTEND: u8 = 2;
-const PAYLOAD_EXTENDED: u8 = 3;
-const PAYLOAD_BEGIN: u8 = 4;
-const PAYLOAD_DATA: u8 = 5;
-const PAYLOAD_END: u8 = 6;
+const PAYLOAD_EXTEND: u8 = 0;
+const PAYLOAD_EXTENDED: u8 = 1;
+const PAYLOAD_BEGIN: u8 = 2;
+const PAYLOAD_DATA: u8 = 3;
 
 /// This enum represents the different types of payloads that can be sent in a relay message,
 /// and is encrypted onion-style.

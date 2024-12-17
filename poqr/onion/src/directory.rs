@@ -73,12 +73,15 @@ impl Directory {
         let relay_info = RelayInfo {
             id,
             port,
-            id_key_pub: relay.identity_key.public,
+            id_key_pub: relay.id_key.public.clone(),
         };
         dir.relays.insert(id, relay_info);
 
         // Increment the next relay ID
         dir.next_relay_id += 1;
+
+        // Start the relay's listener thread
+        relay.start_packet_handler();
 
         id
     }

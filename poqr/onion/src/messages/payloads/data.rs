@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct DataPayload {
     /// A newly generated public onion key of the node sending the CREATED message.
     data: Vec<u8>,

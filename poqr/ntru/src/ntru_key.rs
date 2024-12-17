@@ -2,6 +2,7 @@ use crate::convolution_polynomial::{ternary_polynomial, ConvPoly};
 use crate::ntru_util::{deserialize, serialize};
 use crate::params::*;
 
+#[derive(Clone)]
 /// An NTRU key pair
 pub struct NtruKeyPair {
     /// The public key of the NTRU encryption scheme key pair
