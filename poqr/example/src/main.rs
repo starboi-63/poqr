@@ -1,22 +1,22 @@
 use ntru::convolution_polynomial::ConvPoly;
-use ntru::ntru_key::NtruKeyPair;
-use std::env;
+use ntru::ntru_key::{NtruKeyPair, NtruPublicKey};
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::sync::Arc;
 use std::thread;
+use std::sync::Arc;
 
-fn run_server(private_key: Arc<ntru::ntru_key::NtruPrivateKey>) {
+fn run_server() {
+    let keypair = Arc::new(NtruKeyPair::new());
     let listener = TcpListener::bind("127.0.0.1:7878").expect("Failed to bind to port 7878");
 
     println!("Server listening on 127.0.0.1:7878");
 
     for stream in listener.incoming() {
-        let private_key = Arc::clone(&private_key);
+        let keypair = Arc::clone(&keypair);
         match stream {
             Ok(stream) => {
                 thread::spawn(move || {
-                    handle_client(stream, private_key);
+                    handle_client(stream, keypair);
                 });
             }
             Err(e) => eprintln!("Connection failed: {}", e),
@@ -24,23 +24,53 @@ fn run_server(private_key: Arc<ntru::ntru_key::NtruPrivateKey>) {
     }
 }
 
-fn handle_client(mut stream: TcpStream, private_key: Arc<ntru::ntru_key::NtruPrivateKey>) {
+fn handle_client(mut stream: TcpStream, keypair: Arc<NtruKeyPair>) {
+    println!("New client connected. Initiating handshake...");
+
+    // Send the public key to the client
+    let public_key_bytes = keypair.public.to_be_bytes();
+    stream
+        .write_all(&public_key_bytes)
+        .expect("Failed to send public key to client");
+
+    println!("Public key sent to client.");
+
+    // Now, receive and decrypt messages from the client
+    let mut buffer = vec![0; 4096];
+    loop {
+        let bytes_read = match stream.read(&mut buffer) {
+            Ok(0) => {
+                println!("Client disconnected.");
+                break;
+            }
+            Ok(n) => n,
+            Err(e) => {
+                eprintln!("Failed to read from client: {}", e);
+                break;
+            }
+        };
+
+        let enc_poly = ConvPoly::from_be_bytes(&buffer[..bytes_read].to_vec());
+        let decrypted = keypair.private.decrypt_to_bytes(enc_poly);
+        let message = String::from_utf8_lossy(&decrypted);
+
+        println!("Received and decrypted message: {}", message);
+    }
+}
+
+fn run_client() {
+    let mut stream = TcpStream::connect("127.0.0.1:7878").expect("Failed to connect to server");
+
+    // Receive the public key from the server
     let mut buffer = vec![0; 4096];
     let bytes_read = stream
         .read(&mut buffer)
-        .expect("Failed to read from client");
+        .expect("Failed to read public key from server");
 
-    let enc_poly = ConvPoly::from_be_bytes(&buffer[..bytes_read].to_vec());
-    println!("received poly: {}", enc_poly);
-    let decrypted = private_key.decrypt_to_bytes(enc_poly); 
-    let message = String::from_utf8_lossy(&decrypted);
+    let public_key = NtruPublicKey::from_be_bytes(&buffer[..bytes_read].to_vec());
+    println!("Received public key from server. You can now send messages.");
 
-    println!("Received and decrypted message: {}", message);
-}
-
-fn run_client(public_key: ntru::ntru_key::NtruPublicKey) {
-    println!("Connected to server. Enter messages to send (max 100 bytes). Type 'exit' to quit.");
-
+    // Loop to send messages
     loop {
         print!("Enter message: ");
         io::stdout().flush().expect("Failed to flush stdout");
@@ -51,7 +81,6 @@ fn run_client(public_key: ntru::ntru_key::NtruPublicKey) {
             .expect("Failed to read input");
 
         let message = input.trim();
-
         if message == "exit" {
             println!("Exiting client.");
             break;
@@ -62,24 +91,10 @@ fn run_client(public_key: ntru::ntru_key::NtruPublicKey) {
             continue;
         }
 
-        // Ensure all characters are ASCII
-        if !message.is_ascii() {
-            println!(
-                "Error: Message contains non-ASCII characters. Please use ASCII characters only."
-            );
-            continue;
-        }
-
-        // Convert the message to an ASCII byte vector
         let message_bytes = message.as_bytes().to_vec();
-
         let enc_poly = public_key.encrypt_bytes(message_bytes);
+        let enc_bytes = enc_poly.to_be_bytes();
 
-        println!("sending poly: {}", enc_poly);
-
-        let enc_bytes = enc_poly.to_be_bytes(); 
-
-        let mut stream = TcpStream::connect("127.0.0.1:7878").expect("Failed to connect to server");
         stream
             .write_all(&enc_bytes)
             .expect("Failed to send message");
@@ -89,25 +104,16 @@ fn run_client(public_key: ntru::ntru_key::NtruPublicKey) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
         eprintln!("Usage: {} [server|client]", args[0]);
         std::process::exit(1);
     }
 
-    // Generate the key pair once in `main`
-    let keypair = NtruKeyPair::new();
-
     match args[1].as_str() {
-        "server" => {
-            let private_key = Arc::new(keypair.private);
-            run_server(private_key);
-        }
-        "client" => {
-            let public_key = keypair.public;
-            run_client(public_key);
-        }
+        "server" => run_server(),
+        "client" => run_client(),
         _ => {
             eprintln!("Invalid argument. Use 'server' or 'client'.");
             std::process::exit(1);
