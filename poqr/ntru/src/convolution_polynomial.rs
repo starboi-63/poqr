@@ -320,7 +320,6 @@ impl ConvPoly {
         for &coeff in &self.coeffs {
             buf.extend_from_slice(&coeff.to_be_bytes());
         }
-
         buf
     }
 
