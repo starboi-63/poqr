@@ -1,22 +1,17 @@
 ROOT_DIR := $(shell pwd)
 
-ONION_DIR := ./poqr/onion/
+EXAMPLE_DIR := ./poqr/example/
 NTRU_DIR := ./poqr/ntru/
-NETWORK_DIR := ./poqr/network/
 
-VHOST_OUT := $(ROOT_DIR)/vhost
-VROUTER_OUT := $(ROOT_DIR)/vrouter
-ONION_OUT := $(ROOT_DIR)/poqr-run
-
+EX_OUT := $(ROOT_DIR)/example_prog
 
 build:
-	cargo build --manifest-path $(ROOT_DIR)/poqr/Cargo.toml
-	cp $(ROOT_DIR)/poqr/target/debug/vhost_main $(VHOST_OUT)
-	cp $(ROOT_DIR)/poqr/target/debug/vrouter_main $(VROUTER_OUT)
-	cp $(ROOT_DIR)/poqr/target/debug/onion $(ONION_OUT)
+	cargo build --manifest-path $(ROOT_DIR)/poqr/ntru/Cargo.toml
+	cargo build --manifest-path $(ROOT_DIR)/poqr/example/Cargo.toml
+	cp $(ROOT_DIR)/poqr/target/debug/example $(EX_OUT)
+	
 
 clean: 
-	cargo clean --manifest-path $(ROOT_DIR)/poqr/Cargo.toml
-	rm vhost
-	rm vrouter
-	rm poqr-run
+	cargo clean --manifest-path $(ROOT_DIR)/poqr/ntru/Cargo.toml
+	cargo clean --manifest-path $(ROOT_DIR)/poqr/example/Cargo.toml
+	rm example_prog
