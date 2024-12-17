@@ -3,7 +3,7 @@ use rsa_ext::RsaPublicKey;
 
 pub struct CreatedPayload {
     /// A newly generated public onion key of the node sending the CREATED message.
-    public_key: RsaPublicKey,
+    pub public_key: RsaPublicKey,
 }
 
 impl CreatedPayload {

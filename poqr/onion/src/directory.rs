@@ -5,13 +5,14 @@ use std::collections::{HashMap, HashSet};
 use std::net::UdpSocket;
 use std::sync::{Arc, RwLock};
 
+pub type RelayId = u32;
+
 #[derive(Clone)]
 pub struct RelayInfo {
+    pub id: RelayId,
     pub port: u16,
     pub id_key_pub: NtruPublicKey,
 }
-
-type RelayId = u32;
 
 /// Directory of relays and their public info.
 pub struct Directory {
@@ -70,6 +71,7 @@ impl Directory {
         // Construct a new relay and add it to the directory
         let relay = Relay::new(id, port, directory.clone());
         let relay_info = RelayInfo {
+            id,
             port,
             id_key_pub: relay.identity_key.public,
         };

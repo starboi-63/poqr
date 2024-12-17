@@ -23,6 +23,10 @@ impl ChannelTable {
         self.channels.get(&id)
     }
 
+    pub fn get_mut(&mut self, id: CircuitId) -> Option<&mut Channel> {
+        self.channels.get_mut(&id)
+    }
+
     pub fn remove(&mut self, id: CircuitId) -> Option<Channel> {
         self.channels.remove(&id)
     }
