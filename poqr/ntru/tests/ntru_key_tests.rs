@@ -35,12 +35,15 @@ mod ntru_key_tests {
         // Test to bytes and out of bytes encrypt
         let keypair = NtruKeyPair::new();
         let msg = "helloworld".as_bytes().to_vec();
+        println!("message as string: {}", String::from_utf8_lossy(&msg));
         println!("Message 3: {:?}", msg);
         let enc_msg = keypair.public.encrypt_bytes(msg.clone());
         let enc_msg_bytes = enc_msg.to_be_bytes();
         let enc_msg_debyted = ConvPoly::from_be_bytes(&enc_msg_bytes);
         let dec_msg = keypair.private.decrypt_to_bytes(enc_msg_debyted);
+        println!("dec_msg as string: {}", String::from_utf8_lossy(&dec_msg));
         assert_eq!(msg, dec_msg, "debyting message failed");
+
 
 
         // // Test random messages with new key pairs

@@ -31,9 +31,8 @@ fn handle_client(mut stream: TcpStream, private_key: Arc<ntru::ntru_key::NtruPri
         .expect("Failed to read from client");
 
     let enc_poly = ConvPoly::from_be_bytes(&buffer[..bytes_read].to_vec());
-    let decrypted = private_key.decrypt_to_bytes(enc_poly);
-
-    println!("Received bytes: {:?}", &buffer[..bytes_read]);
+    println!("received poly: {}", enc_poly);
+    let decrypted = private_key.decrypt_to_bytes(enc_poly); 
     let message = String::from_utf8_lossy(&decrypted);
 
     println!("Received and decrypted message: {}", message);
@@ -52,6 +51,7 @@ fn run_client(public_key: ntru::ntru_key::NtruPublicKey) {
             .expect("Failed to read input");
 
         let message = input.trim();
+
         if message == "exit" {
             println!("Exiting client.");
             break;
@@ -62,11 +62,22 @@ fn run_client(public_key: ntru::ntru_key::NtruPublicKey) {
             continue;
         }
 
-        let message_bytes = message.as_bytes().to_vec();
-        let enc_poly = public_key.encrypt_bytes(message_bytes);
-        let enc_bytes = enc_poly.to_be_bytes();
+        // Ensure all characters are ASCII
+        if !message.is_ascii() {
+            println!(
+                "Error: Message contains non-ASCII characters. Please use ASCII characters only."
+            );
+            continue;
+        }
 
-        println!("Sending encrypted bytes: {:?}", enc_bytes);
+        // Convert the message to an ASCII byte vector
+        let message_bytes = message.as_bytes().to_vec();
+
+        let enc_poly = public_key.encrypt_bytes(message_bytes);
+
+        println!("sending poly: {}", enc_poly);
+
+        let enc_bytes = enc_poly.to_be_bytes(); 
 
         let mut stream = TcpStream::connect("127.0.0.1:7878").expect("Failed to connect to server");
         stream
@@ -103,4 +114,3 @@ fn main() {
         }
     }
 }
-
