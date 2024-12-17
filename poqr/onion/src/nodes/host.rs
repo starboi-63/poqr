@@ -94,6 +94,7 @@ impl Host {
         // Lock the tables
         let mut circuits = self.circuit_table.lock().unwrap();
         let mut channels = self.channels.lock().unwrap();
+        // Generate
         // Generate ephemeral key pairs for backward communication from each relay
         let (public_keys, private_keys) = Host::generate_onion_keys(1024);
         // Exclude list to avoid using the same relay twice

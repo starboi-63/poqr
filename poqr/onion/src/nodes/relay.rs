@@ -1,6 +1,9 @@
-use crate::{ChannelTable, Directory, Message, OnionPacket, RelayPayload};
+use crate::{
+    BeginPayload, ChannelTable, CreatePayload, CreatedPayload, Directory, ExtendPayload,
+    ExtendedPayload, Message, OnionPacket, RelayPayload,
+};
 use ntru::NtruKeyPair;
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpListener;
 use std::sync::{mpsc, Arc, Mutex, RwLock};
 
 #[derive(Clone)]
@@ -67,22 +70,72 @@ impl Relay {
 
     fn handle_packet(&self, packet: OnionPacket) {
         match packet.msg {
+            Message::Create(create_payload) => {
+                println!("Received CREATE request");
+                self.handle_create(create_payload);
+            }
+            Message::Created(created_payload) => {
+                println!("Received CREATED confirmation");
+                self.handle_created(created_payload);
+            }
             Message::Relay(payload) => match payload {
                 RelayPayload::Data(data) => {
                     println!("Received data: {:?}", data);
-                    // Forward the data to the next relay
+                    self.handle_data(data);
                 }
                 RelayPayload::Extend(extend_payload) => {
                     println!("Received EXTEND request");
+                    self.handle_extend(extend_payload);
                 }
-                RelayPayload::Extended(_) => {
+                RelayPayload::Extended(extended_payload) => {
                     println!("Received EXTENDED confirmation");
+                    self.handle_extended(extended_payload);
                 }
-                RelayPayload::Begin(_) => {
+                RelayPayload::Begin(begin_payload) => {
                     println!("Got begin payload");
+                    self.handle_begin(begin_payload);
                 }
             },
             _ => (),
         }
+    }
+
+    fn handle_create(&self, payload: CreatePayload) {
+        // Get the channel for the circuit
+        let mut channels = self.channels.lock().unwrap();
+        let channel = channels.get_mut(&payload.circuit_id).unwrap();
+        // Add the backward onion key to the channel
+        let mut backward_onion_keys = channel.backward_onion_keys.lock().unwrap();
+        backward_onion_keys.push(payload.public_key);
+    }
+
+    fn handle_created(&self, payload: CreatedPayload) {
+        // Get the channel for the circuit
+        let mut channels = self.channels.lock().unwrap();
+        let channel = channels.get_mut(&payload.circuit_id).unwrap();
+        // Add the forward onion key to the channel
+        let mut forward_onion_keys = channel.forward_onion_keys.lock().unwrap();
+        forward_onion_keys.push(payload.public_key);
+    }
+
+    //TODO: IMPLEMENT HANDLING EXTENDS AND SENDING BACK EXTENDED
+    fn handle_extend(&self, payload: ExtendPayload) {
+        eprintln!("This would be implemented if we had more time!");
+        todo!();
+    }
+    //TODO: SCRAPPED DUE TO TIMEFRAME
+    fn handle_extended(&self, payload: ExtendedPayload) {
+        eprintln!("This would be implemented if we had more time!");
+        todo!()
+    }
+    //TODO: SCRAPPED DUE TO TIMEFRAME
+    fn handle_begin(&self, payload: BeginPayload) {
+        eprintln!("This would be implemented if we had more time!");
+        todo!()
+    }
+    //TODO: SCRAPPED DUE TO TIMEFRAME
+    fn handle_data(&self, data: Vec<u8>) {
+        eprintln!("This would be implemented if we had more time!");
+        todo!()
     }
 }

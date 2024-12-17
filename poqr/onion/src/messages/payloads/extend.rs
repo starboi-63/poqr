@@ -1,3 +1,4 @@
+use crate::RelayId;
 use crate::{from_be_bytes, to_be_bytes};
 use rsa_ext::RsaPublicKey;
 
