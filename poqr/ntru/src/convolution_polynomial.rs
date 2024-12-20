@@ -160,11 +160,20 @@ impl ConvPoly {
         if self.is_zero() || other.is_zero() {
             return ConvPoly::constant(0);
         }
-        let mut result = ConvPoly { coeffs: vec![0; n] };
+        let mut result = ConvPoly {
+            coeffs: Vec::with_capacity(n),
+        };
 
         for i in 0..=self.deg() {
             for j in 0..=other.deg() {
-                result.coeffs[(i + j) % n] += self.coeffs[i] * other.coeffs[j];
+                let idx = (i + j) % n;
+                let val = self.coeffs[i] * other.coeffs[j];
+
+                if val != 0 && idx > result.deg() {
+                    result.coeffs.resize(idx + 1, 0);
+                }
+
+                result.coeffs[idx] += val;
             }
         }
 

@@ -2,8 +2,8 @@ use ntru::convolution_polynomial::ConvPoly;
 use ntru::ntru_key::{NtruKeyPair, NtruPublicKey};
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::thread;
 use std::sync::Arc;
+use std::thread;
 
 fn run_server() {
     let keypair = Arc::new(NtruKeyPair::new());

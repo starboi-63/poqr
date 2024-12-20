@@ -1,9 +1,5 @@
-# Tanish and Alex Protect the Internet
+# POQR
 
-## HI GRADER! YOU MAY BE WONDERING WHY THERE ISN'T REALLY ANY ONION ROUTING HERE.
+Post-Onion Quantum-Router (POQR — pronounced "poker"). A basic post-quantum safe onion routing setup utilizing the NTRUEncrypt public key crypto-system.
 
-Turns out, implementing a complete encryption scheme from scratch with no dependencies
-is sorta tough! Tanish and I learned this the hard way.
-Still, we hope you'll appreciate the amount of work we've done to create the first ever
-pure Rust implementation of the NTRU cryptographic scheme and a small handshake host-router
-communication using it.
+> By Alex Khosrowshahi and Tanish Makadia; originally created for the CSCI 1680 (Computer Networks) final project at Brown University.
